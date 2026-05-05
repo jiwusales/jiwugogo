@@ -79,9 +79,11 @@
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; align-items: center; justify-content: center; }
         .confirm-card { background: white; width: 85%; max-width: 400px; border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         .confirm-line { border-bottom: 1px solid #eee; padding: 10px 0; }
+        
+        #ip-loading { font-size: 10px; color: #999; margin-bottom: 5px; }
     </style>
 </head>
-<body>
+<body onload="refreshIPs()">
 
     <div class="container">
         
@@ -90,14 +92,9 @@
             <div class="header">訂單登記</div>
             <div class="card">
                 <label>IP分類</label>
+                <div id="ip-loading">正在同步試算表 IP 分類...</div>
                 <div class="ip-group" id="ip-buttons">
-                    <button class="btn-small active" onclick="setIP('吉伊卡哇', this)">吉伊卡哇</button>
-                    <button class="btn-small" onclick="setIP('吉伊卡哇樂園', this)">吉伊卡哇樂園</button>
-                    <button class="btn-small" onclick="setIP('白熊', this)">白熊</button>
-                    <button class="btn-small" onclick="setIP('寶可夢', this)">寶可夢</button>
-                    <button class="btn-small" onclick="setIP('三麗鷗', this)">三麗鷗</button>
-                    <button class="btn-small" onclick="setIP('客訂', this)">客訂</button>
-                    <button class="btn-small" onclick="toggleOtherIP(this)">其他</button>
+                    <!-- IP 按鈕會由 JavaScript 自動生成 -->
                 </div>
                 <input type="text" id="other-ip-input" class="hidden" placeholder="請輸入 IP 名稱">
 
@@ -186,11 +183,50 @@
         let selectedSheetType = "線上";
         let currentParsedData = null;
 
+        // --- 新增：自動刷新並生成 IP 按鈕 ---
+        function refreshIPs() {
+            // 這裡呼叫 GAS 的 getIPs 功能
+            fetch(API_URL + "?action=getIPs")
+            .then(res => res.json())
+            .then(ips => {
+                const container = document.getElementById('ip-buttons');
+                document.getElementById('ip-loading').classList.add('hidden');
+                container.innerHTML = "";
+                
+                ips.forEach(ip => {
+                    const btn = document.createElement('button');
+                    btn.className = 'btn-small' + (ip === selectedIP ? ' active' : '');
+                    btn.innerText = ip;
+                    btn.onclick = function() { setIP(ip, this); };
+                    container.appendChild(btn);
+                });
+
+                // 加入「多團自動辨識」功能鈕
+                const autoBtn = document.createElement('button');
+                autoBtn.className = 'btn-small';
+                autoBtn.style.background = '#a2d2ff';
+                autoBtn.innerText = "多團自動辨識";
+                autoBtn.onclick = function() { setIP('多團', this); };
+                container.appendChild(autoBtn);
+
+                // 加入「其他」按鈕
+                const otherBtn = document.createElement('button');
+                otherBtn.className = 'btn-small';
+                otherBtn.innerText = "其他";
+                otherBtn.onclick = function() { toggleOtherIP(this); };
+                container.appendChild(otherBtn);
+            })
+            .catch(err => {
+                console.error("無法取得 IP 列表", err);
+                document.getElementById('ip-loading').innerText = "IP 同步失敗，請手動輸入";
+            });
+        }
+
         function setIP(val, el) {
             selectedIP = val;
             document.getElementById('other-ip-input').classList.add('hidden');
             document.querySelectorAll('#ip-buttons .btn-small').forEach(b => b.classList.remove('active'));
-            el.classList.add('active');
+            if(el) el.classList.add('active');
         }
 
         function toggleOtherIP(el) {
@@ -222,73 +258,64 @@
             const lines = rawText.split('\n').map(l => l.trim()).filter(l => l !== "");
             if (lines.length < 2) return alert("格式不完全（需包含顧客名與商品資訊）");
 
-            // 第一行固定為顧客名稱
             const customerName = lines[0];
             const products = [];
             let currentGroup = "無";
             let calculatedTotal = 0;
             let textTotal = 0;
+            let currentIP = selectedIP;
 
             for (let i = 1; i < lines.length; i++) {
                 const line = lines[i];
 
-                // 識別團名 【...】
                 const groupMatch = line.match(/【(.+)】/);
                 if (groupMatch) {
                     currentGroup = groupMatch[1];
+                    // 如果選中「多團自動辨識」，則 IP 會跟著團名走
+                    if (selectedIP === '多團') currentIP = groupMatch[1];
                     continue;
                 }
 
-                // 識別總金額
                 const totalMatch = line.match(/總金額：?\$(\d+)/);
                 if (totalMatch) {
                     textTotal = parseInt(totalMatch[1]);
                     continue;
                 }
 
-                // 識別商品 (必須含有 $ 符號)
                 if (line.includes('$')) {
-                    // 去除前面的序號 如 "1. "
                     const cleanLine = line.replace(/^\d+\.\s*/, "");
-                    // 抓取品名與價格
                     const priceMatch = cleanLine.match(/(.+)\$(\d+)/);
                     if (priceMatch) {
-                        const pName = priceMatch[1].trim();
-                        const pPrice = parseInt(priceMatch[2]);
                         products.push({
                             group: currentGroup,
-                            name: pName,
-                            price: pPrice
+                            name: priceMatch[1].trim(),
+                            price: parseInt(priceMatch[2]),
+                            itemIP: (selectedIP === '其他') ? document.getElementById('other-ip-input').value : currentIP
                         });
-                        calculatedTotal += pPrice;
+                        calculatedTotal += parseInt(priceMatch[2]);
                     }
                 }
             }
 
             if (products.length === 0) return alert("解析不到任何商品資訊！");
 
-            const ipFinal = (selectedIP === "其他") ? document.getElementById('other-ip-input').value : selectedIP;
-
             currentParsedData = {
                 customerName,
-                ip: ipFinal,
                 sheet: selectedSheetType,
                 products: products,
-                calculatedTotal,
-                status: "預購中"
+                calculatedTotal
             };
 
-            // 渲染彈窗內容
             let html = `
                 <div class="confirm-line"><b>顧客：</b>${customerName}</div>
-                <div class="confirm-line"><b>分類：</b>${ipFinal} (${selectedSheetType})</div>
+                <div class="confirm-line"><b>分頁：</b>${selectedSheetType}</div>
                 <div style="max-height: 200px; overflow-y: auto; margin-top: 10px; border-bottom: 1px solid #eee;">
             `;
 
             let lastGroup = "";
             products.forEach(p => {
                 if (p.group !== lastGroup) {
-                    html += `<div style="background:#f8f4f1; padding:2px 8px; margin-top:8px; font-weight:bold; border-radius:5px; font-size:12px;">${p.group}</div>`;
+                    html += `<div style="background:#f8f4f1; padding:2px 8px; margin-top:8px; font-weight:bold; border-radius:5px; font-size:12px;">${p.group} (IP: ${p.itemIP})</div>`;
                     lastGroup = p.group;
                 }
                 html += `<div style="padding:4px 8px; display:flex; justify-content:space-between;">
@@ -313,45 +340,44 @@
         }
 
         async function finalSubmit() {
-    const btn = event.target;
-    btn.disabled = true;
-    btn.innerText = "提交中...";
+            const btn = event.target;
+            btn.disabled = true;
+            btn.innerText = "提交中...";
 
-    // 重新封裝資料，以符合你 GAS 中 registerOrder(data) 的要求
-    const payload = {
-        action: "registerOrder",
-        data: {
-            sheetName: currentParsedData.sheet, // 對應 GAS 的 data.sheetName
-            lineName: currentParsedData.customerName, // 對應 GAS 的 data.lineName
-            ip: currentParsedData.ip, // 對應 GAS 的 data.ip
-            groupName: currentParsedData.products[0].group, // 對應 GAS 的 data.groupName (取第一項的團名)
-            items: currentParsedData.products.map(p => ({
-                role: "", // 你的 GAS 有 E 欄角色，這裡先給空值
-                name: p.name,
-                price: p.price
-            }))
+            const payload = {
+                action: "registerOrder",
+                data: {
+                    sheetName: currentParsedData.sheet,
+                    lineName: currentParsedData.customerName,
+                    groupName: currentParsedData.products[0].group,
+                    items: currentParsedData.products.map(p => ({
+                        itemIP: p.itemIP, 
+                        name: p.name,
+                        price: p.price,
+                        role: ""
+                    }))
+                }
+            };
+
+            try {
+                await fetch(API_URL, {
+                    method: "POST",
+                    mode: "no-cors",
+                    body: JSON.stringify(payload)
+                });
+                
+                alert("登記完成！");
+                document.getElementById('quick-input').value = "";
+                closeModal();
+                refreshIPs(); // 成功後刷新 IP 列表，確保新 IP 被加入按鈕
+            } catch (e) {
+                console.error(e);
+                alert("提交發生錯誤");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "確認並輸入試算表";
+            }
         }
-    };
-
-    try {
-        const response = await fetch(API_URL, {
-            method: "POST",
-            mode: "no-cors", // 避免 CORS 阻擋
-            body: JSON.stringify(payload)
-        });
-        
-        // 注意：使用 no-cors 模式無法讀取 response 內容，只要沒跳 catch 就算成功
-        alert("指令已送出！請確認試算表「" + currentParsedData.sheet + "」分頁。");
-        document.getElementById('quick-input').value = "";
-        closeModal();
-    } catch (e) {
-        console.error(e);
-        alert("提交發生錯誤，請檢查網路或 GAS 權限設定");
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "確認並輸入試算表";
-    }
-}
 
         function showQueryUI(type) {
             const ui = document.getElementById('query-ui');
