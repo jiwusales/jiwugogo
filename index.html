@@ -95,16 +95,15 @@
                 <div class="ip-group" id="ip-buttons">
                     <span style="font-size:12px; color:#999;">載入中...</span>
                 </div>
-                <input type="text" id="other-ip-input" class="hidden" placeholder="請輸入新 IP 名稱">
+                <input type="text" id="other-ip-input" class="hidden" placeholder="輸入IP名稱">
 
-                <label>分頁名稱</label>
+                <label>訂單來源</label>
                 <div class="type-group">
                     <div class="type-item active" onclick="setSheetType('線上', this)">線上</div>
                     <div class="type-item" onclick="setSheetType('開團', this)">開團</div>
                 </div>
 
                 <label>快速輸入 (顧客名稱 + 訂單內容)</label>
-                <textarea id="quick-input" rows="10" placeholder="名字 & 下單內容"></textarea>
                 
                 <button class="btn" onclick="parseAndConfirm()">內容確認</button>
             </div>
@@ -210,7 +209,7 @@
             autoBtn.className = 'btn-small' + (selectedIP === '多團' ? ' active' : '');
             autoBtn.style.background = (selectedIP === '多團') ? '#B08968' : '#A2D2FF';
             autoBtn.style.color = (selectedIP === '多團') ? 'white' : '#555';
-            autoBtn.innerText = "✨多團自動辨識";
+            autoBtn.innerText = "自動辨識";
             autoBtn.onclick = function() { setIP('多團', this); };
             container.appendChild(autoBtn);
 
