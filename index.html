@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>吉物小金庫</title>
+    <style>
+        :root {
+            --bg: #F5EBE0;          /* 奶茶色背景 */
+            --card-bg: #FFFFFF;     /* 卡片白色 */
+            --primary: #D5BDAF;     /* 柔和深奶茶 */
+            --text: #74512D;        /* 深咖啡色文字 */
+            --accent: #E3D5CA;      /* 淺奶茶色 */
+            --highlight: #B08968;   /* 強調色 */
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+            margin: 0;
+            padding: 15px;
+            font-size: 14px;
+        }
+
+        .header { text-align: center; font-size: 1.2rem; font-weight: bold; margin: 20px 0; letter-spacing: 1px; color: var(--highlight); }
+        .card { background: var(--card-bg); border-radius: 18px; padding: 18px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); margin-bottom: 20px; }
+        
+        /* 按鈕風格 */
+        .btn { background: var(--primary); border: none; padding: 10px 15px; border-radius: 10px; color: var(--text); font-weight: bold; cursor: pointer; width: 100%; transition: 0.2s; }
+        .btn:active { opacity: 0.7; }
+        .btn-small { width: auto; padding: 5px 12px; font-size: 12px; margin: 2px; background: var(--accent); }
+
+        /* 查詢與標籤 */
+        .tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
+        .filter-tags { display: flex; gap: 8px; margin: 10px 0; overflow-x: auto; }
+        .tag { background: var(--accent); padding: 4px 12px; border-radius: 15px; font-size: 12px; white-space: nowrap; cursor: pointer; }
+        .tag.active { background: var(--highlight); color: white; }
+
+        /* 輸入框 */
+        input { width: 100%; padding: 10px; border: 1px solid var(--accent); border-radius: 8px; margin: 8px 0; box-sizing: border-box; outline: none; }
+
+        /* 訂單明細內容 */
+        .order-row { border-bottom: 1px solid #f8f8f8; padding: 12px 0; }
+        .order-summary { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .detail-pane { background: #FCF9F6; padding: 12px; border-radius: 10px; margin-top: 8px; display: none; }
+        .detail-pane.show { display: block; }
+
+        /* 匯款 Icon 區 */
+        .pay-group { display: flex; gap: 10px; margin-top: 8px; align-items: center; }
+        .pay-icon { width: 24px; height: 24px; cursor: pointer; border-radius: 4px; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; font-size: 10px; background: #fff; }
+        .pay-icon.selected { border-color: var(--highlight); background: var(--highlight); color: #fff; }
+
+        .hidden { display: none; }
+        .total-box { text-align: right; font-weight: bold; color: var(--highlight); margin-top: 10px; border-top: 1px dashed var(--primary); padding-top: 5px; }
+    </style>
+</head>
+<body>
+
+    <div style="max-width: 500px; margin: 0 auto;">
+        
+        <!-- 1. 顧客訂單查詢 -->
+        <div class="header">訂單查詢</div>
+        <div class="card">
+            <div class="tabs">
+                <button class="btn btn-small" onclick="showQuery('date')">日期</button>
+                <button class="btn btn-small" onclick="showQuery('user')">名字</button>
+            </div>
+            
+            <div id="query-ui">
+                <p style="text-align:center; color:#ccc;">開始查詢</p>
+            </div>
+        </div>
+
+        <!-- 2. 下單管理區 -->
+        <div class="header">下單管理</div>
+        <div class="card">
+            <div class="filter-tags">
+                <div class="tag active">5月</div><div class="tag">4月</div><div class="tag">3月</div>
+            </div>
+            <div id="order-list">
+                <!-- 日期摺疊區 -->
+                <div class="order-row" onclick="toggle('baby-list')">📂 2026-05-01 訂單 <span style="float:right;">▼</span></div>
+                <div id="baby-list" class="detail-pane">
+                    <label><input type="checkbox" style="width:auto;"> #ORD12345 (官網)</label><br>
+                    <label><input type="checkbox" style="width:auto;"> #ORD12346 (私訊)</label>
+                    <input type="number" placeholder="重量 (kg)" style="margin-top:10px;">
+                    <input type="number" placeholder="運費金額">
+                    <button class="btn btn-small" style="width:100%">確認打包並排序</button>
+                </div>
+            </div>
+            <button class="btn" style="margin-top:15px;" onclick="babyCount()">👶 寶寶點名</button>
+        </div>
+
+        <!-- 3. 出貨區 -->
+        <div class="header">出貨區</div>
+        <div class="card">
+            <input type="text" id="ship-input" placeholder="輸入團名、顧客名或日期...">
+            <button class="btn" onclick="alert('查詢中...')">查詢貨況</button>
+            <div id="ship-results" style="margin-top:10px;">
+                <div style="color:var(--highlight); font-weight:bold; margin-bottom:5px;">● 到貨/預購明細</div>
+                <!-- 勾選連動邏輯 -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 寶寶點名結果彈窗 -->
+    <div id="modal" class="card hidden" style="position:fixed; top:15%; left:10%; width:80%; z-index:999; border:2px solid var(--primary);">
+        <div class="header" style="margin:0 0 15px 0;">寶寶點名統計</div>
+        <div id="count-res"></div>
+        <button class="btn" style="margin-top:15px;" onclick="toggle('modal')">關閉</button>
+    </div>
+
+    <script>
+        // 請將此處換成你部署 GAS 後得到的 URL
+        const API_URL = "https://script.google.com/macros/s/AKfycbzEaZqaGT4HU2sWDUIiBLQ2TljlaW4YCeupcd_yVf0AlboFATxXSKpkwUwfUWbTuovGKA/exec";
+
+        function toggle(id) {
+            const el = document.getElementById(id);
+            if (el.classList.contains('hidden')) {
+                el.classList.remove('hidden');
+            } else if (el.style.display === 'block') {
+                el.style.display = 'none';
+            } else {
+                el.classList.add('show'); 
+                // 簡單切換邏輯
+                const isShow = el.getAttribute('data-show') === 'true';
+                el.style.display = isShow ? 'none' : 'block';
+                el.setAttribute('data-show', !isShow);
+            }
+        }
+
+        function showQuery(type) {
+            const ui = document.getElementById('query-ui');
+            if(type === 'date') {
+                ui.innerHTML = `<input type="date" id="q-date"><div id="res-box"></div>`;
+            } else {
+                ui.innerHTML = `<input type="text" placeholder="輸入顧客名稱" id="q-user"><div id="res-box"></div>`;
+            }
+        }
+
+        // 模擬匯款方式選擇
+        function setPay(type, id) {
+            const group = document.getElementById('pay-group-'+id);
+            const icons = group.querySelectorAll('.pay-icon');
+            icons.forEach(i => i.classList.add('hidden'));
+            const selected = document.getElementById('pay-'+type+'-'+id);
+            selected.classList.remove('hidden');
+            selected.classList.add('selected');
+        }
+
+        // 寶寶點名計算
+        function babyCount() {
+            const res = document.getElementById('count-res');
+            // 此處應從資料庫抓取實際已打包數據
+            const data = {"吊娃": 53, "娃": 20, "公仔": 8};
+            let html = "";
+            for(let key in data) {
+                html += `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee;">
+                            <span>${key}</span><span>${data[key]} 隻</span>
+                         </div>`;
+            }
+            res.innerHTML = html;
+            document.getElementById('modal').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
