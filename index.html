@@ -6,12 +6,13 @@
     <title>吉物小金庫</title>
     <style>
         :root {
-            --bg: #F5EBE0;          /* 奶茶色背景 */
-            --card-bg: #FFFFFF;     /* 卡片白色 */
+            --bg: #EEE5E0;          /* 背景 */
+            --card-bg: #FFFFFF;     /* 卡片 */
             --primary: #D5BDAF;     /* 柔和深奶茶 */
-            --text: #74512D;        /* 深咖啡色文字 */
+            --text: #FFFFFF;        /* 文字 */
             --accent: #E3D5CA;      /* 淺奶茶色 */
             --highlight: #B08968;   /* 強調色 */
+            --nav-bg: #FFFFFF;
         }
 
         body {
@@ -19,148 +20,177 @@
             color: var(--text);
             font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
             margin: 0;
-            padding: 15px;
+            padding: 0;
             font-size: 14px;
+            padding-bottom: 80px; /* 為底部選單留空間 */
         }
 
+        .container { padding: 15px; max-width: 500px; margin: 0 auto; }
         .header { text-align: center; font-size: 1.2rem; font-weight: bold; margin: 20px 0; letter-spacing: 1px; color: var(--highlight); }
         .card { background: var(--card-bg); border-radius: 18px; padding: 18px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); margin-bottom: 20px; }
         
-        /* 按鈕風格 */
-        .btn { background: var(--primary); border: none; padding: 10px 15px; border-radius: 10px; color: var(--text); font-weight: bold; cursor: pointer; width: 100%; transition: 0.2s; }
-        .btn:active { opacity: 0.7; }
-        .btn-small { width: auto; padding: 5px 12px; font-size: 12px; margin: 2px; background: var(--accent); }
+        /* 底部選單導覽列 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: var(--nav-bg);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            z-index: 1000;
+        }
 
-        /* 查詢與標籤 */
-        .tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
-        .filter-tags { display: flex; gap: 8px; margin: 10px 0; overflow-x: auto; }
-        .tag { background: var(--accent); padding: 4px 12px; border-radius: 15px; font-size: 12px; white-space: nowrap; cursor: pointer; }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #A68A7B;
+            text-decoration: none;
+            font-size: 10px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .nav-item.active { color: var(--highlight); font-weight: bold; }
+        .nav-item i { font-size: 20px; margin-bottom: 4px; }
+
+        /* 分頁切換邏輯 */
+        .page { display: none; }
+        .page.active { display: block; }
+
+        /* 通用元件風格 */
+        .btn { background: var(--primary); border: none; padding: 10px 15px; border-radius: 10px; color: var(--text); font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px; }
+        .btn-small { width: auto; padding: 5px 12px; font-size: 12px; margin: 2px; background: var(--accent); border: none; border-radius: 8px; color: var(--text); }
+        input { width: 100%; padding: 12px; border: 1.5px solid var(--accent); border-radius: 10px; margin: 8px 0; box-sizing: border-box; outline: none; }
+        .tag { background: var(--accent); padding: 4px 12px; border-radius: 15px; font-size: 12px; white-space: nowrap; cursor: pointer; display: inline-block; margin-right: 5px; }
         .tag.active { background: var(--highlight); color: white; }
 
-        /* 輸入框 */
-        input { width: 100%; padding: 10px; border: 1px solid var(--accent); border-radius: 8px; margin: 8px 0; box-sizing: border-box; outline: none; }
-
-        /* 訂單明細內容 */
+        /* 內容樣式 */
         .order-row { border-bottom: 1px solid #f8f8f8; padding: 12px 0; }
-        .order-summary { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .detail-pane { background: #FCF9F6; padding: 12px; border-radius: 10px; margin-top: 8px; display: none; }
-        .detail-pane.show { display: block; }
-
-        /* 匯款 Icon 區 */
-        .pay-group { display: flex; gap: 10px; margin-top: 8px; align-items: center; }
-        .pay-icon { width: 24px; height: 24px; cursor: pointer; border-radius: 4px; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; font-size: 10px; background: #fff; }
-        .pay-icon.selected { border-color: var(--highlight); background: var(--highlight); color: #fff; }
-
         .hidden { display: none; }
-        .total-box { text-align: right; font-weight: bold; color: var(--highlight); margin-top: 10px; border-top: 1px dashed var(--primary); padding-top: 5px; }
     </style>
 </head>
 <body>
 
-    <div style="max-width: 500px; margin: 0 auto;">
+    <div class="container">
         
-        <!-- 1. 顧客訂單查詢 -->
-        <div class="header">訂單查詢</div>
-        <div class="card">
-            <div class="tabs">
-                <button class="btn btn-small" onclick="showQuery('date')">日期</button>
-                <button class="btn btn-small" onclick="showQuery('user')">名字</button>
-            </div>
-            
-            <div id="query-ui">
-                <p style="text-align:center; color:#ccc;">開始查詢</p>
-            </div>
-        </div>
-
-        <!-- 2. 下單管理區 -->
-        <div class="header">下單管理</div>
-        <div class="card">
-            <div class="filter-tags">
-                <div class="tag active">5月</div><div class="tag">4月</div><div class="tag">3月</div>
-            </div>
-            <div id="order-list">
-                <!-- 日期摺疊區 -->
-                <div class="order-row" onclick="toggle('baby-list')">📂 2026-05-01 訂單 <span style="float:right;">▼</span></div>
-                <div id="baby-list" class="detail-pane">
-                    <label><input type="checkbox" style="width:auto;"> #ORD12345 (官網)</label><br>
-                    <label><input type="checkbox" style="width:auto;"> #ORD12346 (私訊)</label>
-                    <input type="number" placeholder="重量 (kg)" style="margin-top:10px;">
-                    <input type="number" placeholder="運費金額">
-                    <button class="btn btn-small" style="width:100%">確認打包並排序</button>
+        <!-- 頁面 1: 訂單查詢 -->
+        <div id="page-search" class="page active">
+            <div class="header">訂單查詢</div>
+            <div class="card">
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-small" style="flex:1" onclick="showQueryUI('date')">📅 日期查詢</button>
+                    <button class="btn btn-small" style="flex:1" onclick="showQueryUI('user')">👤 名字查詢</button>
+                </div>
+                <div id="query-ui" style="margin-top: 15px;">
+                    <p style="text-align:center; color:#ccc;">選擇方式開始查詢</p>
                 </div>
             </div>
-            <button class="btn" style="margin-top:15px;" onclick="babyCount()">👶 寶寶點名</button>
         </div>
 
-        <!-- 3. 出貨區 -->
-        <div class="header">出貨區</div>
-        <div class="card">
-            <input type="text" id="ship-input" placeholder="輸入團名、顧客名或日期...">
-            <button class="btn" onclick="alert('查詢中...')">查詢貨況</button>
-            <div id="ship-results" style="margin-top:10px;">
-                <div style="color:var(--highlight); font-weight:bold; margin-bottom:5px;">● 到貨/預購明細</div>
-                <!-- 勾選連動邏輯 -->
+        <!-- 頁面 2: 下單紀錄 -->
+        <div id="page-record" class="page">
+            <div class="header">下單紀錄</div>
+            <div class="card">
+                <div class="tag active">5月</div><div class="tag">4月</div>
+                <div id="record-list" style="margin-top: 15px;">
+                    <div class="order-row">📂 2026-05-01 訂單列表...</div>
+                    <!-- 這裡放當月所有訂單的概覽 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 頁面 3: 庫存管理 (含寶寶點名) -->
+        <div id="page-inventory" class="page">
+            <div class="header">庫存與打包</div>
+            <div class="card">
+                <div class="order-row" onclick="toggle('pack-detail')">📦 待打包區 (點擊展開)</div>
+                <div id="pack-detail" class="detail-pane">
+                    <label><input type="checkbox" style="width:auto;"> ORD-551 (吉伊)</label><br>
+                    <input type="number" placeholder="重量 kg">
+                    <button class="btn btn-small">確認打包</button>
+                </div>
+                <button class="btn" style="margin-top:20px;" onclick="babyCount()">👶 寶寶點名統計</button>
+            </div>
+        </div>
+
+        <!-- 頁面 4: 出貨區 -->
+        <div id="page-shipping" class="page">
+            <div class="header">出貨狀態</div>
+            <div class="card">
+                <input type="text" id="ship-search" placeholder="輸入關鍵字...">
+                <button class="btn" onclick="alert('搜尋中...')">搜尋貨況</button>
+                <div id="ship-results" style="margin-top:15px;">
+                    <div style="color:var(--highlight); font-weight:bold;">● 近期到貨</div>
+                    <p style="font-size: 12px; color: #999;">目前尚無新到貨資料</p>
+                </div>
             </div>
         </div>
 
     </div>
 
-    <!-- 寶寶點名結果彈窗 -->
+    <!-- 底部導覽列 -->
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchPage('search', this)">
+            <span>🔍</span>
+            <span>查詢</span>
+        </div>
+        <div class="nav-item" onclick="switchPage('record', this)">
+            <span>📝</span>
+            <span>紀錄</span>
+        </div>
+        <div class="nav-item" onclick="switchPage('inventory', this)">
+            <span>📦</span>
+            <span>庫存</span>
+        </div>
+        <div class="nav-item" onclick="switchPage('shipping', this)">
+            <span>🚚</span>
+            <span>出貨</span>
+        </div>
+    </div>
+
+    <!-- 寶寶點名彈窗 -->
     <div id="modal" class="card hidden" style="position:fixed; top:15%; left:10%; width:80%; z-index:999; border:2px solid var(--primary);">
-        <div class="header" style="margin:0 0 15px 0;">寶寶點名統計</div>
+        <div class="header">統計結果</div>
         <div id="count-res"></div>
-        <button class="btn" style="margin-top:15px;" onclick="toggle('modal')">關閉</button>
+        <button class="btn" onclick="document.getElementById('modal').classList.add('hidden')">關閉</button>
     </div>
 
     <script>
-        // 請將此處換成你部署 GAS 後得到的 URL
         const API_URL = "https://script.google.com/macros/s/AKfycbzEaZqaGT4HU2sWDUIiBLQ2TljlaW4YCeupcd_yVf0AlboFATxXSKpkwUwfUWbTuovGKA/exec";
+
+        // 切換頁面功能
+        function switchPage(pageId, element) {
+            // 隱藏所有頁面
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            // 顯示目標頁面
+            document.getElementById('page-' + pageId).classList.add('active');
+            
+            // 更新選單樣式
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            element.classList.add('active');
+        }
+
+        function showQueryUI(type) {
+            const ui = document.getElementById('query-ui');
+            ui.innerHTML = type === 'date' 
+                ? `<input type="date"><button class="btn">搜尋日期</button>` 
+                : `<input type="text" placeholder="請輸入顧客名稱"><button class="btn">搜尋顧客</button>`;
+        }
 
         function toggle(id) {
             const el = document.getElementById(id);
-            if (el.classList.contains('hidden')) {
-                el.classList.remove('hidden');
-            } else if (el.style.display === 'block') {
-                el.style.display = 'none';
-            } else {
-                el.classList.add('show'); 
-                // 簡單切換邏輯
-                const isShow = el.getAttribute('data-show') === 'true';
-                el.style.display = isShow ? 'none' : 'block';
-                el.setAttribute('data-show', !isShow);
-            }
+            el.style.display = (el.style.display === 'block') ? 'none' : 'block';
         }
 
-        function showQuery(type) {
-            const ui = document.getElementById('query-ui');
-            if(type === 'date') {
-                ui.innerHTML = `<input type="date" id="q-date"><div id="res-box"></div>`;
-            } else {
-                ui.innerHTML = `<input type="text" placeholder="輸入顧客名稱" id="q-user"><div id="res-box"></div>`;
-            }
-        }
-
-        // 模擬匯款方式選擇
-        function setPay(type, id) {
-            const group = document.getElementById('pay-group-'+id);
-            const icons = group.querySelectorAll('.pay-icon');
-            icons.forEach(i => i.classList.add('hidden'));
-            const selected = document.getElementById('pay-'+type+'-'+id);
-            selected.classList.remove('hidden');
-            selected.classList.add('selected');
-        }
-
-        // 寶寶點名計算
         function babyCount() {
             const res = document.getElementById('count-res');
-            // 此處應從資料庫抓取實際已打包數據
-            const data = {"吊娃": 53, "娃": 20, "公仔": 8};
+            const mock = {"吊娃": 53, "娃": 20, "公仔": 8};
             let html = "";
-            for(let key in data) {
-                html += `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee;">
-                            <span>${key}</span><span>${data[key]} 隻</span>
-                         </div>`;
-            }
+            for(let k in mock) html += `<div style="display:flex; justify-content:space-between; padding:8px 0;"><span>${k}</span><span>${mock[k]} 隻</span></div>`;
             res.innerHTML = html;
             document.getElementById('modal').classList.remove('hidden');
         }
