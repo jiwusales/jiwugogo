@@ -125,11 +125,13 @@
             </div>
         </div>
 
+        <!-- 這裡已補回搜尋框 -->
         <div id="page-search" class="page">
             <div class="header">訂單查詢</div>
             <div class="card">
                 <label>輸入團名或姓名</label>
                 <div style="display: flex; gap: 8px; align-items: center;">
+                    <input type="text" id="quick-search-input" placeholder="例如：吉伊卡哇 或 王小明" style="margin: 0; flex: 1;">
                     <button class="btn" id="btn-search-exec" onclick="searchOrders()" style="width: 80px; margin: 0;">搜尋</button>
                 </div>
             </div>
@@ -205,7 +207,6 @@
             "IPass": "#F09163"
         };
 
-        // 3-2. 排序權重
         const statusOrder = { "已到貨": 1, "預購中": 2, "出貨完畢": 3 };
 
         async function fetchIPs() {
@@ -314,10 +315,9 @@
                     list.innerHTML = `<div style="text-align:center; padding:20px; color:#74512D;">找不到資料</div>`;
                 } else {
                     const totalCount = data.length;
-                    
-                    // 3-2. 排序權重
                     const sortedStatuses = Object.keys(statusOrder).sort((a,b) => statusOrder[a] - statusOrder[b]);
                     const statusGroups = {};
+                    
                     data.forEach(item => {
                         const s = item.status || "未註記";
                         if (!statusGroups[s]) statusGroups[s] = [];
@@ -337,9 +337,8 @@
 
                         const userGroups = {};
                         statusGroups[status].forEach(item => {
-                            // 這裡確保讀取的是後端對應 J 欄的 payMethod
-                            // 如果後端傳回來的 Key 不同，請確認 Apps Script 裡對應 J 欄的名稱
-                            const currentPay = item.payMethod || item.payment || "未填";
+                            // 同時支援 payMethod, payment 或直接寫死在 J 欄的邏輯
+                            const currentPay = item.payMethod || item.payment || item.pay || "未填";
                             const userKey = `${item.lineName}_${item.groupName}_${currentPay}`;
                             
                             if (!userGroups[userKey]) {
