@@ -6,9 +6,9 @@
     <title>吉物小金庫</title>
     <style>
         :root {
-            --bg: #FCFEF1;          
+            --bg: #f3f1eb;          
             --card-bg: #FFFFFF;     
-            --primary: #fdd365;     
+            --primary: #fbb550;     
             --text: #74512D;        
             --accent: #feecc0;      
             --highlight: #fbb550;   
@@ -201,17 +201,18 @@
             }
         }
 
-        function renderIPButtons() {
-            const container = document.getElementById('ip-buttons');
-            container.innerHTML = "";
-            
-            const autoBtn = document.createElement('button');
-            autoBtn.className = 'btn-small' + (selectedIP === '多團' ? ' active' : '');
-            autoBtn.style.background = (selectedIP === '多團') ? '#B08968' : '#A2D2FF';
-            autoBtn.style.color = (selectedIP === '多團') ? 'white' : '#555';
-            autoBtn.innerText = "自動辨識";
-            autoBtn.onclick = function() { setIP('多團', this); };
-            container.appendChild(autoBtn);
+function renderIPButtons() {
+    const container = document.getElementById('ip-buttons');
+    container.innerHTML = "";
+    const autoBtn = document.createElement('button');
+    autoBtn.className = 'btn-small'; // 基本樣式
+    // 控制選中狀態的顏色切換
+    if (selectedIP === '多團') {
+        autoBtn.classList.add('active');
+    }
+    autoBtn.innerText = "自動辨識";
+    autoBtn.onclick = function() { setIP('多團', this); };
+    container.appendChild(autoBtn);;
 
             ipList.forEach(ip => {
                 const btn = document.createElement('button');
