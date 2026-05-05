@@ -313,25 +313,45 @@
         }
 
         async function finalSubmit() {
-            const btn = event.target;
-            btn.disabled = true;
-            btn.innerText = "提交中...";
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerText = "提交中...";
 
-            try {
-                const response = await fetch(API_URL, {
-                    method: "POST",
-                    body: JSON.stringify(currentParsedData)
-                });
-                alert("資料已成功輸入試算表！");
-                document.getElementById('quick-input').value = "";
-                closeModal();
-            } catch (e) {
-                alert("提交失敗，請檢查網路或 API 設定");
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "確認並輸入試算表";
-            }
+    // 重新封裝資料，以符合你 GAS 中 registerOrder(data) 的要求
+    const payload = {
+        action: "registerOrder",
+        data: {
+            sheetName: currentParsedData.sheet, // 對應 GAS 的 data.sheetName
+            lineName: currentParsedData.customerName, // 對應 GAS 的 data.lineName
+            ip: currentParsedData.ip, // 對應 GAS 的 data.ip
+            groupName: currentParsedData.products[0].group, // 對應 GAS 的 data.groupName (取第一項的團名)
+            items: currentParsedData.products.map(p => ({
+                role: "", // 你的 GAS 有 E 欄角色，這裡先給空值
+                name: p.name,
+                price: p.price
+            }))
         }
+    };
+
+    try {
+        const response = await fetch(API_URL, {
+            method: "POST",
+            mode: "no-cors", // 避免 CORS 阻擋
+            body: JSON.stringify(payload)
+        });
+        
+        // 注意：使用 no-cors 模式無法讀取 response 內容，只要沒跳 catch 就算成功
+        alert("指令已送出！請確認試算表「" + currentParsedData.sheet + "」分頁。");
+        document.getElementById('quick-input').value = "";
+        closeModal();
+    } catch (e) {
+        console.error(e);
+        alert("提交發生錯誤，請檢查網路或 GAS 權限設定");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "確認並輸入試算表";
+    }
+}
 
         function showQueryUI(type) {
             const ui = document.getElementById('query-ui');
