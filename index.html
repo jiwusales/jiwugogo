@@ -61,16 +61,24 @@
         .page.active { display: block; }
 
         .btn { background: var(--primary); border: none; padding: 12px 15px; border-radius: 10px; color: var(--btn-text); font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px; }
-        .btn-small { width: auto; padding: 5px 12px; font-size: 12px; margin: 2px; background: var(--accent); border: none; border-radius: 8px; color: var(--text); }
-        input, select { width: 100%; padding: 12px; border: 1.5px solid var(--accent); border-radius: 10px; margin: 8px 0; box-sizing: border-box; outline: none; background: #fff; color: var(--text); font-size: 14px; }
+        .btn-small { width: auto; padding: 5px 12px; font-size: 12px; margin: 2px; background: var(--accent); border: none; border-radius: 8px; color: var(--text); cursor: pointer; }
+        .btn-small.active { background: var(--highlight); color: white; }
+
+        input, select, textarea { width: 100%; padding: 12px; border: 1.5px solid var(--accent); border-radius: 10px; margin: 8px 0; box-sizing: border-box; outline: none; background: #fff; color: var(--text); font-size: 14px; }
         label { font-weight: bold; font-size: 12px; margin-top: 8px; display: block; color: var(--highlight); }
         
-        .tag { background: var(--accent); padding: 4px 12px; border-radius: 15px; font-size: 12px; white-space: nowrap; cursor: pointer; display: inline-block; margin-right: 5px; color: var(--text); }
-        .tag.active { background: var(--highlight); color: white; }
+        .ip-group { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0; }
+        .type-group { display: flex; gap: 10px; margin: 8px 0; }
+        .type-item { flex: 1; text-align: center; padding: 10px; border-radius: 10px; background: var(--accent); cursor: pointer; font-weight: bold; }
+        .type-item.active { background: var(--highlight); color: white; }
 
         .order-row { border-bottom: 1px solid #f8f8f8; padding: 12px 0; color: var(--text); }
         .detail-pane { background: #FCF9F6; padding: 12px; border-radius: 10px; margin-top: 8px; display: none; color: var(--text); }
-        .hidden { display: none; }
+        
+        .hidden { display: none !important; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; align-items: center; justify-content: center; }
+        .confirm-card { background: white; width: 85%; max-width: 400px; border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .confirm-line { border-bottom: 1px solid #eee; padding: 10px 0; }
     </style>
 </head>
 <body>
@@ -81,34 +89,32 @@
         <div id="page-add" class="page active">
             <div class="header">訂單登記</div>
             <div class="card">
-                <label>顧客名稱</label>
-                <input type="text" id="reg-name" placeholder="請輸入 LINE 名稱">
-                
-                <label>角色分類</label>
-                <select id="reg-ip">
-                    <option value="吉伊卡哇">吉伊卡哇</option>
-                    <option value="咒術迴戰">咒術迴戰</option>
-                    <option value="SAKAMOTO DAYS">SAKAMOTO DAYS</option>
-                </select>
-
-                <label>品項</label>
-                <input type="text" id="reg-item" placeholder="例如：壓克力立牌">
-
-                <div style="display: flex; gap: 10px;">
-                    <div style="flex: 1;">
-                        <label>單價</label>
-                        <input type="number" id="reg-price" placeholder="0">
-                    </div>
-                    <div style="flex: 1;">
-                        <label>數量</label>
-                        <input type="number" id="reg-qty" value="1">
-                    </div>
+                <label>選擇 IP 分類</label>
+                <div class="ip-group" id="ip-buttons">
+                    <button class="btn-small active" onclick="setIP('吉伊卡哇', this)">吉伊卡哇</button>
+                    <button class="btn-small" onclick="setIP('吉伊卡哇樂園', this)">吉伊卡哇樂園</button>
+                    <button class="btn-small" onclick="setIP('白熊', this)">白熊</button>
+                    <button class="btn-small" onclick="setIP('寶可夢', this)">寶可夢</button>
+                    <button class="btn-small" onclick="setIP('三麗鷗', this)">三麗鷗</button>
+                    <button class="btn-small" onclick="setIP('客訂', this)">客訂</button>
+                    <button class="btn-small" onclick="toggleOtherIP(this)">其他</button>
                 </div>
-                <button class="btn" onclick="submitOrder()">確認登記</button>
+                <input type="text" id="other-ip-input" class="hidden" placeholder="請輸入 IP 名稱">
+
+                <label>分頁名稱</label>
+                <div class="type-group">
+                    <div class="type-item active" onclick="setSheetType('線上', this)">線上</div>
+                    <div class="type-item" onclick="setSheetType('開團', this)">開團</div>
+                </div>
+
+                <label>快速輸入 (LINE/團名/商品)</label>
+                <textarea id="quick-input" rows="8" placeholder="LINE名稱：(客戶名)&#10;團名(選填)：(團名)&#10;商品：(角色) (商品名) (金額)"></textarea>
+                
+                <button class="btn" onclick="parseAndConfirm()">解析訂單並確認</button>
             </div>
         </div>
 
-        <!-- 頁面 2: 訂單查詢 -->
+        <!-- 其他頁面保持不變 -->
         <div id="page-search" class="page">
             <div class="header">訂單查詢</div>
             <div class="card">
@@ -122,74 +128,85 @@
             </div>
         </div>
 
-        <!-- 頁面 3: 下單紀錄 -->
         <div id="page-record" class="page">
             <div class="header">下單紀錄</div>
             <div class="card">
-                <div class="tag active">5月</div><div class="tag">4月</div>
-                <div id="record-list" style="margin-top: 15px;">
+                <div id="record-list">
                     <div class="order-row">目前尚無紀錄</div>
                 </div>
             </div>
         </div>
 
-        <!-- 頁面 4: 庫存管理 -->
         <div id="page-inventory" class="page">
             <div class="header">庫存與打包</div>
             <div class="card">
                 <div class="order-row" onclick="toggle('pack-detail')">待打包區 (點擊展開)</div>
                 <div id="pack-detail" class="detail-pane">
-                    <label><input type="checkbox" style="width:auto;"> ORD-001 (預設商品)</label><br>
-                    <input type="number" placeholder="重量 kg">
-                    <button class="btn btn-small">確認打包</button>
+                    <p>暫無待打包項目</p>
                 </div>
                 <button class="btn" style="margin-top:20px;" onclick="babyCount()">寶寶點名統計</button>
             </div>
         </div>
 
-        <!-- 頁面 5: 出貨區 -->
         <div id="page-shipping" class="page">
             <div class="header">出貨狀態</div>
             <div class="card">
                 <input type="text" id="ship-search" placeholder="輸入關鍵字...">
                 <button class="btn" onclick="alert('搜尋中...')">搜尋貨況</button>
-                <div id="ship-results" style="margin-top:15px;">
-                    <div style="color:var(--highlight); font-weight:bold;">近期到貨</div>
-                    <p style="font-size: 12px; color: #999;">目前尚無新到貨資料</p>
-                </div>
             </div>
         </div>
 
     </div>
 
-    <!-- 底部導覽列 -->
-    <div class="bottom-nav">
-        <div class="nav-item active" onclick="switchPage('add', this)">
-            <span>登記</span>
-        </div>
-        <div class="nav-item" onclick="switchPage('search', this)">
-            <span>查詢</span>
-        </div>
-        <div class="nav-item" onclick="switchPage('record', this)">
-            <span>紀錄</span>
-        </div>
-        <div class="nav-item" onclick="switchPage('inventory', this)">
-            <span>庫存</span>
-        </div>
-        <div class="nav-item" onclick="switchPage('shipping', this)">
-            <span>出貨</span>
+    <!-- 確認彈窗 -->
+    <div id="confirm-modal" class="modal-overlay hidden">
+        <div class="confirm-card">
+            <div class="header" style="margin: 0 0 15px 0;">確認訂單內容</div>
+            <div id="confirm-content" style="color: var(--text); font-size: 14px;"></div>
+            <div style="margin-top: 20px; display: flex; gap: 10px;">
+                <button class="btn" style="background: #ccc; flex: 1;" onclick="closeModal()">取消</button>
+                <button class="btn" style="flex: 2;" onclick="finalSubmit()">確認並輸入試算表</button>
+            </div>
         </div>
     </div>
 
-    <!-- 寶寶點名彈窗 -->
-    <div id="modal" class="card hidden" style="position:fixed; top:15%; left:10%; width:80%; z-index:999; border:2px solid var(--primary);">
-        <div class="header">統計結果</div>
-        <div id="count-res"></div>
-        <button class="btn" onclick="document.getElementById('modal').classList.add('hidden')">關閉</button>
+    <!-- 底部導覽列 -->
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchPage('add', this)"><span>登記</span></div>
+        <div class="nav-item" onclick="switchPage('search', this)"><span>查詢</span></div>
+        <div class="nav-item" onclick="switchPage('record', this)"><span>紀錄</span></div>
+        <div class="nav-item" onclick="switchPage('inventory', this)"><span>庫存</span></div>
+        <div class="nav-item" onclick="switchPage('shipping', this)"><span>出貨</span></div>
     </div>
 
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbzEaZqaGT4HU2sWDUIiBLQ2TljlaW4YCeupcd_yVf0AlboFATxXSKpkwUwfUWbTuovGKA/exec";
+        
+        let selectedIP = "吉伊卡哇";
+        let selectedSheetType = "線上";
+        let currentParsedData = null;
+
+        function setIP(val, el) {
+            selectedIP = val;
+            document.getElementById('other-ip-input').classList.add('hidden');
+            document.querySelectorAll('#ip-buttons .btn-small').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function toggleOtherIP(el) {
+            document.querySelectorAll('#ip-buttons .btn-small').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+            const input = document.getElementById('other-ip-input');
+            input.classList.remove('hidden');
+            input.focus();
+            selectedIP = "其他";
+        }
+
+        function setSheetType(val, el) {
+            selectedSheetType = val;
+            document.querySelectorAll('.type-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+        }
 
         function switchPage(pageId, element) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -198,22 +215,86 @@
             element.classList.add('active');
         }
 
-        async function submitOrder() {
-            const data = {
-                name: document.getElementById('reg-name').value,
-                ip: document.getElementById('reg-ip').value,
-                item: document.getElementById('reg-item').value,
-                price: document.getElementById('reg-price').value,
-                qty: document.getElementById('reg-qty').value
+        function parseAndConfirm() {
+            const rawText = document.getElementById('quick-input').value;
+            if (!rawText.trim()) return alert("請輸入內容");
+
+            // 正則解析
+            const nameMatch = rawText.match(/LINE名稱：(.+)/);
+            const groupMatch = rawText.match(/團名\(選填\)：(.+)/);
+            const productLines = rawText.match(/商品：(.+)/g);
+
+            if (!nameMatch) return alert("請確認格式");
+
+            const customerName = nameMatch[1].trim();
+            const groupName = groupMatch ? groupMatch[1].trim() : "無";
+            const products = [];
+            let totalAmount = 0;
+
+            if (productLines) {
+                productLines.forEach(line => {
+                    const content = line.replace("商品：", "").trim();
+                    const parts = content.split(/\s+/);
+                    if (parts.length >= 2) {
+                        const price = parseInt(parts[parts.length - 1]) || 0;
+                        const productName = parts.slice(0, parts.length - 1).join(" ");
+                        products.push({ name: productName, price: price });
+                        totalAmount += price;
+                    }
+                });
+            }
+
+            const ipFinal = (selectedIP === "其他") ? document.getElementById('other-ip-input').value : selectedIP;
+
+            currentParsedData = {
+                customerName,
+                groupName,
+                products,
+                totalAmount,
+                ip: ipFinal,
+                sheet: selectedSheetType,
+                status: "預購中"
             };
-            if(!data.name || !data.item) return alert("請填寫姓名與品項");
+
+            // 渲染確認視窗
+            let html = `
+                <div class="confirm-line"><b>LINE名：</b>${customerName}</div>
+                <div class="confirm-line"><b>團名：</b>${groupName}</div>
+                <div class="confirm-line"><b>IP/分頁：</b>${ipFinal} / ${selectedSheetType}</div>
+                <div class="confirm-line"><b>商品清單：</b><br>
+                    ${products.map(p => `· ${p.name} $${p.price}`).join('<br>')}
+                </div>
+                <div style="text-align: right; padding-top: 15px; font-weight: bold; color: var(--highlight); font-size: 18px;">
+                    總金額：$${totalAmount}
+                </div>
+            `;
             
+            document.getElementById('confirm-content').innerHTML = html;
+            document.getElementById('confirm-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+        }
+
+        async function finalSubmit() {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.innerText = "提交中...";
+
             try {
-                // 提交邏輯預留
-                console.log("Submitting:", data);
-                alert("已提交登記資料");
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    body: JSON.stringify(currentParsedData)
+                });
+                alert("資料已成功輸入試算表！");
+                document.getElementById('quick-input').value = "";
+                closeModal();
             } catch (e) {
-                alert("提交失敗");
+                alert("提交失敗，請檢查網路或 API 設定");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "確認並輸入試算表";
             }
         }
 
@@ -227,15 +308,6 @@
         function toggle(id) {
             const el = document.getElementById(id);
             el.style.display = (el.style.display === 'block') ? 'none' : 'block';
-        }
-
-        function babyCount() {
-            const res = document.getElementById('count-res');
-            const mock = {"吊娃": 53, "娃": 20, "公仔": 8};
-            let html = "";
-            for(let k in mock) html += `<div style="display:flex; justify-content:space-between; padding:8px 0;"><span>${k}</span><span>${mock[k]} 隻</span></div>`;
-            res.innerHTML = html;
-            document.getElementById('modal').classList.remove('hidden');
         }
     </script>
 </body>
