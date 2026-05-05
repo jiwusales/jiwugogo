@@ -89,7 +89,7 @@
         <div id="page-add" class="page active">
             <div class="header">訂單登記</div>
             <div class="card">
-                <label>選擇 IP 分類</label>
+                <label>IP分類</label>
                 <div class="ip-group" id="ip-buttons">
                     <button class="btn-small active" onclick="setIP('吉伊卡哇', this)">吉伊卡哇</button>
                     <button class="btn-small" onclick="setIP('吉伊卡哇樂園', this)">吉伊卡哇樂園</button>
@@ -107,14 +107,14 @@
                     <div class="type-item" onclick="setSheetType('開團', this)">開團</div>
                 </div>
 
-                <label>快速輸入 (LINE/團名/商品)</label>
-                <textarea id="quick-input" rows="8" placeholder="LINE名稱：(客戶名)&#10;團名(選填)：(團名)&#10;商品：(角色) (商品名) (金額)"></textarea>
+                <label>快速輸入 (顧客名稱 + 訂單內容)</label>
+                <textarea id="quick-input" rows="10" placeholder="名字 & 下單內容"></textarea>
                 
-                <button class="btn" onclick="parseAndConfirm()">解析訂單並確認</button>
+                <button class="btn" onclick="parseAndConfirm()">內容確認</button>
             </div>
         </div>
 
-        <!-- 其他頁面保持不變 -->
+        <!-- 查詢頁面 -->
         <div id="page-search" class="page">
             <div class="header">訂單查詢</div>
             <div class="card">
@@ -123,7 +123,7 @@
                     <button class="btn btn-small" style="flex:1" onclick="showQueryUI('user')">名字查詢</button>
                 </div>
                 <div id="query-ui" style="margin-top: 15px;">
-                    <p style="text-align:center; color:#ccc;">選擇方式開始查詢</p>
+                    <p style="text-align:center; color:#ccc;">開始查詢</p>
                 </div>
             </div>
         </div>
@@ -144,7 +144,7 @@
                 <div id="pack-detail" class="detail-pane">
                     <p>暫無待打包項目</p>
                 </div>
-                <button class="btn" style="margin-top:20px;" onclick="babyCount()">寶寶點名統計</button>
+                <button class="btn" style="margin-top:20px;" onclick="alert('功能開發中')">寶寶點名統計</button>
             </div>
         </div>
 
@@ -216,56 +216,91 @@
         }
 
         function parseAndConfirm() {
-            const rawText = document.getElementById('quick-input').value;
-            if (!rawText.trim()) return alert("請輸入內容");
+            const rawText = document.getElementById('quick-input').value.trim();
+            if (!rawText) return alert("請輸入內容");
 
-            // 正則解析
-            const nameMatch = rawText.match(/LINE名稱：(.+)/);
-            const groupMatch = rawText.match(/團名\(選填\)：(.+)/);
-            const productLines = rawText.match(/商品：(.+)/g);
+            const lines = rawText.split('\n').map(l => l.trim()).filter(l => l !== "");
+            if (lines.length < 2) return alert("格式不完全（需包含顧客名與商品資訊）");
 
-            if (!nameMatch) return alert("請確認格式");
-
-            const customerName = nameMatch[1].trim();
-            const groupName = groupMatch ? groupMatch[1].trim() : "無";
+            // 第一行固定為顧客名稱
+            const customerName = lines[0];
             const products = [];
-            let totalAmount = 0;
+            let currentGroup = "無";
+            let calculatedTotal = 0;
+            let textTotal = 0;
 
-            if (productLines) {
-                productLines.forEach(line => {
-                    const content = line.replace("商品：", "").trim();
-                    const parts = content.split(/\s+/);
-                    if (parts.length >= 2) {
-                        const price = parseInt(parts[parts.length - 1]) || 0;
-                        const productName = parts.slice(0, parts.length - 1).join(" ");
-                        products.push({ name: productName, price: price });
-                        totalAmount += price;
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i];
+
+                // 識別團名 【...】
+                const groupMatch = line.match(/【(.+)】/);
+                if (groupMatch) {
+                    currentGroup = groupMatch[1];
+                    continue;
+                }
+
+                // 識別總金額
+                const totalMatch = line.match(/總金額：?\$(\d+)/);
+                if (totalMatch) {
+                    textTotal = parseInt(totalMatch[1]);
+                    continue;
+                }
+
+                // 識別商品 (必須含有 $ 符號)
+                if (line.includes('$')) {
+                    // 去除前面的序號 如 "1. "
+                    const cleanLine = line.replace(/^\d+\.\s*/, "");
+                    // 抓取品名與價格
+                    const priceMatch = cleanLine.match(/(.+)\$(\d+)/);
+                    if (priceMatch) {
+                        const pName = priceMatch[1].trim();
+                        const pPrice = parseInt(priceMatch[2]);
+                        products.push({
+                            group: currentGroup,
+                            name: pName,
+                            price: pPrice
+                        });
+                        calculatedTotal += pPrice;
                     }
-                });
+                }
             }
+
+            if (products.length === 0) return alert("解析不到任何商品資訊！");
 
             const ipFinal = (selectedIP === "其他") ? document.getElementById('other-ip-input').value : selectedIP;
 
             currentParsedData = {
                 customerName,
-                groupName,
-                products,
-                totalAmount,
                 ip: ipFinal,
                 sheet: selectedSheetType,
+                products: products,
+                calculatedTotal,
                 status: "預購中"
             };
 
-            // 渲染確認視窗
+            // 渲染彈窗內容
             let html = `
-                <div class="confirm-line"><b>LINE名：</b>${customerName}</div>
-                <div class="confirm-line"><b>團名：</b>${groupName}</div>
-                <div class="confirm-line"><b>IP/分頁：</b>${ipFinal} / ${selectedSheetType}</div>
-                <div class="confirm-line"><b>商品清單：</b><br>
-                    ${products.map(p => `· ${p.name} $${p.price}`).join('<br>')}
-                </div>
-                <div style="text-align: right; padding-top: 15px; font-weight: bold; color: var(--highlight); font-size: 18px;">
-                    總金額：$${totalAmount}
+                <div class="confirm-line"><b>顧客：</b>${customerName}</div>
+                <div class="confirm-line"><b>分類：</b>${ipFinal} (${selectedSheetType})</div>
+                <div style="max-height: 200px; overflow-y: auto; margin-top: 10px; border-bottom: 1px solid #eee;">
+            `;
+
+            let lastGroup = "";
+            products.forEach(p => {
+                if (p.group !== lastGroup) {
+                    html += `<div style="background:#f8f4f1; padding:2px 8px; margin-top:8px; font-weight:bold; border-radius:5px; font-size:12px;">${p.group}</div>`;
+                    lastGroup = p.group;
+                }
+                html += `<div style="padding:4px 8px; display:flex; justify-content:space-between;">
+                            <span>· ${p.name}</span>
+                            <span>$${p.price}</span>
+                         </div>`;
+            });
+
+            html += `</div>
+                <div style="text-align: right; padding-top: 15px;">
+                    <span style="font-weight: bold; color: var(--highlight); font-size: 18px;">總計：$${calculatedTotal}</span>
+                    ${textTotal > 0 && textTotal !== calculatedTotal ? `<br><span style="color:red; font-size:11px;">⚠️ 與內文總額 $${textTotal} 不符</span>` : ""}
                 </div>
             `;
             
