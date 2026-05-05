@@ -6,13 +6,13 @@
     <title>吉物小金庫</title>
     <style>
         :root {
-            --bg: #f3f1eb;          
+            --bg: #F8F7FF;          /* 極淺紫底色 */
             --card-bg: #FFFFFF;     
-            --primary: #FBCC7E;
-            --title-color: #74512D;
-            --text: #74512D;        
-            --accent: #FFE67A;      
-            --highlight: #fbb550;   
+            --primary: #B8B0FC;     /* 主色：柔和紫色 */
+            --title-color: #5E548E; /* 標題：深紫色 */
+            --text: #5E548E;        /* 文字：深紫色 */
+            --accent: #E0DEFF;      /* 輔助色：淺紫色（按鈕未選中） */
+            --highlight: #9381FF;   /* 強調色：明亮紫色（選中狀態） */
             --nav-bg: #FFFFFF;
             --btn-text: #FFFFFF;    
         }
@@ -29,7 +29,7 @@
 
         .container { padding: 15px; max-width: 500px; margin: 0 auto; }
         .header { text-align: center; font-size: 1.2rem; font-weight: bold; margin: 20px 0; letter-spacing: 1px; color: var(--title-color); }
-        .card { background: var(--card-bg); border-radius: 18px; padding: 18px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); margin-bottom: 20px; }
+        .card { background: var(--card-bg); border-radius: 18px; padding: 18px; box-shadow: 0 4px 15px rgba(147, 129, 255, 0.08); margin-bottom: 20px; }
         
         .bottom-nav {
             position: fixed;
@@ -47,7 +47,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            color: #A68A7B;
+            color: #BEB7DF; /* 未選中的圖標文字顏色 */
             text-decoration: none;
             font-size: 11px;
             cursor: pointer;
@@ -61,25 +61,29 @@
         .page { display: none; }
         .page.active { display: block; }
 
-        .btn { background: var(--primary); border: none; padding: 12px 15px; border-radius: 10px; color: var(--btn-text); font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px; }
-        .btn-small { width: auto; padding: 5px 12px; font-size: 12px; margin: 2px; background: var(--accent); border: none; border-radius: 8px; color: var(--text); cursor: pointer; }
+        .btn { background: var(--primary); border: none; padding: 12px 15px; border-radius: 10px; color: var(--btn-text); font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px; transition: 0.3s; }
+        .btn:active { opacity: 0.8; }
+        
+        .btn-small { width: auto; padding: 5px 12px; font-size: 12px; margin: 2px; background: var(--accent); border: none; border-radius: 8px; color: var(--text); cursor: pointer; transition: 0.2s; }
         .btn-small.active { background: var(--highlight); color: white; }
 
         input, select, textarea { width: 100%; padding: 12px; border: 1.5px solid var(--accent); border-radius: 10px; margin: 8px 0; box-sizing: border-box; outline: none; background: #fff; color: var(--text); font-size: 14px; }
+        input:focus { border-color: var(--highlight); }
+        
         label { font-weight: bold; font-size: 12px; margin-top: 8px; display: block; color: var(--highlight); }
         
         .ip-group { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0; }
         .type-group { display: flex; gap: 10px; margin: 8px 0; }
-        .type-item { flex: 1; text-align: center; padding: 10px; border-radius: 10px; background: var(--accent); cursor: pointer; font-weight: bold; }
+        .type-item { flex: 1; text-align: center; padding: 10px; border-radius: 10px; background: var(--accent); cursor: pointer; font-weight: bold; transition: 0.2s; }
         .type-item.active { background: var(--highlight); color: white; }
 
-        .order-row { border-bottom: 1px solid #f8f8f8; padding: 12px 0; color: var(--text); }
-        .detail-pane { background: #FCF9F6; padding: 12px; border-radius: 10px; margin-top: 8px; display: none; color: var(--text); }
+        .order-row { border-bottom: 1px solid #F0EFFF; padding: 12px 0; color: var(--text); }
+        .detail-pane { background: #F4F3FF; padding: 12px; border-radius: 10px; margin-top: 8px; display: none; color: var(--text); }
         
         .hidden { display: none !important; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; align-items: center; justify-content: center; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(94, 84, 142, 0.4); z-index: 2000; display: flex; align-items: center; justify-content: center; }
         .confirm-card { background: white; width: 85%; max-width: 400px; border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .confirm-line { border-bottom: 1px solid #eee; padding: 10px 0; }
+        .confirm-line { border-bottom: 1px solid #F0EFFF; padding: 10px 0; }
         
         #ip-hint { font-size: 10px; color: #999; margin-bottom: 5px; }
     </style>
@@ -94,7 +98,7 @@
             <div class="card">
                 <label>IP分類</label>
                 <div class="ip-group" id="ip-buttons">
-                    <span style="font-size:12px; color:#999;">載入中...</span>
+                    <span style="font-size:12px; color:#BEB7DF;">載入中...</span>
                 </div>
                 <input type="text" id="other-ip-input" class="hidden" placeholder="輸入IP名稱">
 
@@ -105,6 +109,7 @@
                 </div>
 
                 <label>快速輸入 (顧客名稱 + 訂單內容)</label>
+                <textarea id="quick-input" rows="6" placeholder="例如：&#10;花花&#10;【吉伊卡哇】&#10;1. 兔兔吊飾 $350&#10;總金額：$350"></textarea>
                 
                 <button class="btn" onclick="parseAndConfirm()">內容確認</button>
             </div>
@@ -119,7 +124,7 @@
                     <button class="btn btn-small" style="flex:1" onclick="showQueryUI('user')">名字查詢</button>
                 </div>
                 <div id="query-ui" style="margin-top: 15px;">
-                    <p style="text-align:center; color:#ccc;">開始查詢</p>
+                    <p style="text-align:center; color:#BEB7DF;">開始查詢</p>
                 </div>
             </div>
         </div>
@@ -163,8 +168,8 @@
             <div class="header" style="margin: 0 0 15px 0;">確認訂單內容</div>
             <div id="confirm-content" style="color: var(--text); font-size: 14px;"></div>
             <div style="margin-top: 20px; display: flex; gap: 10px;">
-                <button class="btn" style="background: #ccc; flex: 1;" onclick="closeModal()">取消</button>
-                <button class="btn" style="flex: 2;" onclick="finalSubmit()">確認並輸入試算表</button>
+                <button class="btn" style="background: #E0DEFF; color: var(--text); flex: 1;" onclick="closeModal()">取消</button>
+                <button class="btn" style="flex: 2; background: var(--highlight);" onclick="finalSubmit()">確認並輸入試算表</button>
             </div>
         </div>
     </div>
@@ -202,18 +207,17 @@
             }
         }
 
-function renderIPButtons() {
-    const container = document.getElementById('ip-buttons');
-    container.innerHTML = "";
-    const autoBtn = document.createElement('button');
-    autoBtn.className = 'btn-small'; // 基本樣式
-    // 控制選中狀態的顏色切換
-    if (selectedIP === '多團') {
-        autoBtn.classList.add('active');
-    }
-    autoBtn.innerText = "自動辨識";
-    autoBtn.onclick = function() { setIP('多團', this); };
-    container.appendChild(autoBtn);;
+        function renderIPButtons() {
+            const container = document.getElementById('ip-buttons');
+            container.innerHTML = "";
+            const autoBtn = document.createElement('button');
+            autoBtn.className = 'btn-small';
+            if (selectedIP === '多團') {
+                autoBtn.classList.add('active');
+            }
+            autoBtn.innerText = "自動辨識";
+            autoBtn.onclick = function() { setIP('多團', this); };
+            container.appendChild(autoBtn);
 
             ipList.forEach(ip => {
                 const btn = document.createElement('button');
@@ -327,13 +331,13 @@ function renderIPButtons() {
             let html = `
                 <div class="confirm-line"><b>顧客：</b>${customerName}</div>
                 <div class="confirm-line"><b>分頁：</b>${selectedSheetType}</div>
-                <div style="max-height: 250px; overflow-y: auto; margin-top: 10px; border-bottom: 1px solid #eee;">
+                <div style="max-height: 250px; overflow-y: auto; margin-top: 10px; border-bottom: 1px solid #F0EFFF;">
             `;
 
             let lastGroupName = "";
             products.forEach(p => {
                 if (p.group !== lastGroupName) {
-                    html += `<div style="background:#f8f1ed; color:#b08968; font-size:11px; padding:2px 8px; margin-top:10px; border-radius:4px;">團名：【${p.group}】</div>`;
+                    html += `<div style="background:#F0EFFF; color:#5E548E; font-size:11px; padding:2px 8px; margin-top:10px; border-radius:4px;">團名：【${p.group}】</div>`;
                     lastGroupName = p.group;
                 }
                 html += `<div style="padding:4px 8px; display:flex; justify-content:space-between;">
