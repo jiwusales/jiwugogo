@@ -6,13 +6,13 @@
     <title>吉物小金庫</title>
     <style>
         :root {
-            --bg: #F8F7FF;          /* 極淺紫底色 */
+            --bg: #F9F6F2;          /* 淺奶茶底色 */
             --card-bg: #FFFFFF;     
-            --primary: #B8B0FC;     /* 主色：柔和紫色 */
-            --title-color: #5E548E; /* 標題：深紫色 */
-            --text: #5E548E;        /* 文字：深紫色 */
-            --accent: #E0DEFF;      /* 輔助色：淺紫色（按鈕未選中） */
-            --highlight: #9381FF;   /* 強調色：明亮紫色（選中狀態） */
+            --primary: #DBCDC1;     /* 主色：燕麥奶色 */
+            --title-color: #74512D; /* 標題：深可可色 */
+            --text: #74512D;        /* 文字：深可可色 */
+            --accent: #EDE0D4;      /* 輔助色：淺焦糖（按鈕未選中） */
+            --highlight: #B08968;   /* 強調色：厚奶茶色（選中狀態） */
             --nav-bg: #FFFFFF;
             --btn-text: #FFFFFF;    
         }
@@ -29,7 +29,7 @@
 
         .container { padding: 15px; max-width: 500px; margin: 0 auto; }
         .header { text-align: center; font-size: 1.2rem; font-weight: bold; margin: 20px 0; letter-spacing: 1px; color: var(--title-color); }
-        .card { background: var(--card-bg); border-radius: 18px; padding: 18px; box-shadow: 0 4px 15px rgba(147, 129, 255, 0.08); margin-bottom: 20px; }
+        .card { background: var(--card-bg); border-radius: 18px; padding: 18px; box-shadow: 0 4px 15px rgba(116, 81, 45, 0.05); margin-bottom: 20px; }
         
         .bottom-nav {
             position: fixed;
@@ -47,7 +47,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            color: #BEB7DF; /* 未選中的圖標文字顏色 */
+            color: #C6AC8F; /* 未選中顏色 */
             text-decoration: none;
             font-size: 11px;
             cursor: pointer;
@@ -77,15 +77,13 @@
         .type-item { flex: 1; text-align: center; padding: 10px; border-radius: 10px; background: var(--accent); cursor: pointer; font-weight: bold; transition: 0.2s; }
         .type-item.active { background: var(--highlight); color: white; }
 
-        .order-row { border-bottom: 1px solid #F0EFFF; padding: 12px 0; color: var(--text); }
-        .detail-pane { background: #F4F3FF; padding: 12px; border-radius: 10px; margin-top: 8px; display: none; color: var(--text); }
+        .order-row { border-bottom: 1px solid #F5EBE0; padding: 12px 0; color: var(--text); }
+        .detail-pane { background: #F8F1ED; padding: 12px; border-radius: 10px; margin-top: 8px; display: none; color: var(--text); }
         
         .hidden { display: none !important; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(94, 84, 142, 0.4); z-index: 2000; display: flex; align-items: center; justify-content: center; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(116, 81, 45, 0.4); z-index: 2000; display: flex; align-items: center; justify-content: center; }
         .confirm-card { background: white; width: 85%; max-width: 400px; border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .confirm-line { border-bottom: 1px solid #F0EFFF; padding: 10px 0; }
-        
-        #ip-hint { font-size: 10px; color: #999; margin-bottom: 5px; }
+        .confirm-line { border-bottom: 1px solid #F5EBE0; padding: 10px 0; }
     </style>
 </head>
 <body onload="fetchIPs()">
@@ -98,7 +96,7 @@
             <div class="card">
                 <label>IP分類</label>
                 <div class="ip-group" id="ip-buttons">
-                    <span style="font-size:12px; color:#BEB7DF;">載入中...</span>
+                    <span style="font-size:12px; color:#C6AC8F;">載入中...</span>
                 </div>
                 <input type="text" id="other-ip-input" class="hidden" placeholder="輸入IP名稱">
 
@@ -124,7 +122,7 @@
                     <button class="btn btn-small" style="flex:1" onclick="showQueryUI('user')">名字查詢</button>
                 </div>
                 <div id="query-ui" style="margin-top: 15px;">
-                    <p style="text-align:center; color:#BEB7DF;">開始查詢</p>
+                    <p style="text-align:center; color:#C6AC8F;">開始查詢</p>
                 </div>
             </div>
         </div>
@@ -168,7 +166,7 @@
             <div class="header" style="margin: 0 0 15px 0;">確認訂單內容</div>
             <div id="confirm-content" style="color: var(--text); font-size: 14px;"></div>
             <div style="margin-top: 20px; display: flex; gap: 10px;">
-                <button class="btn" style="background: #E0DEFF; color: var(--text); flex: 1;" onclick="closeModal()">取消</button>
+                <button class="btn" style="background: #EDE0D4; color: var(--text); flex: 1;" onclick="closeModal()">取消</button>
                 <button class="btn" style="flex: 2; background: var(--highlight);" onclick="finalSubmit()">確認並輸入試算表</button>
             </div>
         </div>
@@ -331,13 +329,13 @@
             let html = `
                 <div class="confirm-line"><b>顧客：</b>${customerName}</div>
                 <div class="confirm-line"><b>分頁：</b>${selectedSheetType}</div>
-                <div style="max-height: 250px; overflow-y: auto; margin-top: 10px; border-bottom: 1px solid #F0EFFF;">
+                <div style="max-height: 250px; overflow-y: auto; margin-top: 10px; border-bottom: 1px solid #F5EBE0;">
             `;
 
             let lastGroupName = "";
             products.forEach(p => {
                 if (p.group !== lastGroupName) {
-                    html += `<div style="background:#F0EFFF; color:#5E548E; font-size:11px; padding:2px 8px; margin-top:10px; border-radius:4px;">團名：【${p.group}】</div>`;
+                    html += `<div style="background:#F5EBE0; color:#74512D; font-size:11px; padding:2px 8px; margin-top:10px; border-radius:4px;">團名：【${p.group}】</div>`;
                     lastGroupName = p.group;
                 }
                 html += `<div style="padding:4px 8px; display:flex; justify-content:space-between;">
