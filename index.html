@@ -83,7 +83,6 @@
         #ip-hint { font-size: 10px; color: #999; margin-bottom: 5px; }
     </style>
 </head>
-<!-- 載入頁面時自動抓取試算表中的 IP -->
 <body onload="fetchIPs()">
 
     <div class="container">
@@ -94,7 +93,6 @@
             <div class="card">
                 <label>IP分類</label>
                 <div class="ip-group" id="ip-buttons">
-                    <!-- IP 按鈕由 JavaScript 動態生成 -->
                     <span style="font-size:12px; color:#999;">載入中...</span>
                 </div>
                 <input type="text" id="other-ip-input" class="hidden" placeholder="請輸入新 IP 名稱">
@@ -126,6 +124,7 @@
             </div>
         </div>
 
+        <!-- 紀錄頁面 -->
         <div id="page-record" class="page">
             <div class="header">下單紀錄</div>
             <div class="card">
@@ -135,6 +134,7 @@
             </div>
         </div>
 
+        <!-- 庫存頁面 -->
         <div id="page-inventory" class="page">
             <div class="header">庫存與打包</div>
             <div class="card">
@@ -146,6 +146,7 @@
             </div>
         </div>
 
+        <!-- 出貨頁面 -->
         <div id="page-shipping" class="page">
             <div class="header">出貨狀態</div>
             <div class="card">
@@ -180,14 +181,12 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbzEaZqaGT4HU2sWDUIiBLQ2TljlaW4YCeupcd_yVf0AlboFATxXSKpkwUwfUWbTuovGKA/exec";
         
-        let ipList = []; // 改為空陣列，等待從後台抓取
-        let selectedIP = "多團"; // 預設改為多團自動辨識
+        let ipList = []; 
+        let selectedIP = "多團"; 
         let selectedSheetType = "線上";
         let currentParsedData = null;
 
-        // 向後台請求現有的 IP 列表
         async function fetchIPs() {
-            const container = document.getElementById('ip-buttons');
             try {
                 const response = await fetch(API_URL, {
                     method: "POST",
@@ -195,17 +194,10 @@
                     body: JSON.stringify({ action: "getIPs" })
                 });
                 const data = await response.json();
-                
-                // 將後台回傳的 IP 更新到清單中
-                if (Array.isArray(data)) {
-                    ipList = data;
-                }
-                
+                if (Array.isArray(data)) { ipList = data; }
             } catch (e) {
                 console.error("無法取得試算表 IP 列表：", e);
-                // 若失敗則維持空陣列，畫面僅會顯示基礎按鈕
             } finally {
-                // 不論成功或失敗，都重新繪製按鈕
                 renderIPButtons();
             }
         }
@@ -222,7 +214,6 @@
             autoBtn.onclick = function() { setIP('多團', this); };
             container.appendChild(autoBtn);
 
-            // 動態生成試算表中存在的 IP 按鈕
             ipList.forEach(ip => {
                 const btn = document.createElement('button');
                 btn.className = 'btn-small' + (ip === selectedIP ? ' active' : '');
@@ -254,12 +245,9 @@
 
         function autoDetectIP(groupName) {
             if (!groupName || groupName === "無") return "未分類";
-            
-            // 如果從自動抓取的 ipList 中有符合的，就回傳
             for (let known of ipList) {
                 if (groupName.includes(known)) return known;
             }
-            // 若都沒符合，就抓取前四個字元
             let clean = groupName.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '');
             return clean.substring(0, 4) || groupName;
         }
@@ -389,7 +377,6 @@
             };
 
             try {
-                // 注意這裡我移除了 mode: "no-cors"，確保可以正常發送
                 await fetch(API_URL, {
                     method: "POST",
                     headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -402,7 +389,6 @@
                 document.getElementById('other-ip-input').classList.add('hidden');
                 
                 closeModal();
-                // 提交完成後重新抓取一次最新的 IP 列表
                 fetchIPs();
             } catch (e) {
                 console.error(e);
