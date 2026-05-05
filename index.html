@@ -6,14 +6,14 @@
     <title>吉物小金庫</title>
     <style>
         :root {
-            --bg: #EEE5E0;          /* 背景 */
-            --card-bg: #FFFFFF;     /* 卡片 */
-            --primary: #D5BDAF;     /* 柔和深奶茶 */
-            --text: #74512D;        /* 文字修正為深咖啡色 */
-            --accent: #E3D5CA;      /* 淺奶茶色 */
-            --highlight: #B08968;   /* 強調色 */
+            --bg: #EEE5E0;          
+            --card-bg: #FFFFFF;     
+            --primary: #D5BDAF;     
+            --text: #74512D;        
+            --accent: #E3D5CA;      
+            --highlight: #B08968;   
             --nav-bg: #FFFFFF;
-            --btn-text: #FFFFFF;    /* 按鈕上的文字顏色 */
+            --btn-text: #FFFFFF;    
         }
 
         body {
@@ -83,7 +83,8 @@
         #ip-hint { font-size: 10px; color: #999; margin-bottom: 5px; }
     </style>
 </head>
-<body onload="renderIPButtons()">
+<!-- 載入頁面時自動抓取試算表中的 IP -->
+<body onload="fetchIPs()">
 
     <div class="container">
         
@@ -94,7 +95,8 @@
                 <label>IP分類</label>
                 <div id="ip-hint">請選擇單一 IP 或使用自動辨識：</div>
                 <div class="ip-group" id="ip-buttons">
-                    <!-- IP 按鈕由 JavaScript 生成 -->
+                    <!-- IP 按鈕由 JavaScript 動態生成 -->
+                    <span style="font-size:12px; color:#999;">載入中...</span>
                 </div>
                 <input type="text" id="other-ip-input" class="hidden" placeholder="請輸入新 IP 名稱">
 
@@ -179,10 +181,35 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbzEaZqaGT4HU2sWDUIiBLQ2TljlaW4YCeupcd_yVf0AlboFATxXSKpkwUwfUWbTuovGKA/exec";
         
-        let ipList = ["吉伊卡哇", "吉伊卡哇樂園", "白熊", "寶可夢", "三麗鷗", "呪術廻戰", "鏈鋸人", "客訂"];
-        let selectedIP = "吉伊卡哇";
+        let ipList = []; // 改為空陣列，等待從後台抓取
+        let selectedIP = "多團"; // 預設改為多團自動辨識
         let selectedSheetType = "線上";
         let currentParsedData = null;
+
+        // 向後台請求現有的 IP 列表
+        async function fetchIPs() {
+            const container = document.getElementById('ip-buttons');
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ action: "getIPs" })
+                });
+                const data = await response.json();
+                
+                // 將後台回傳的 IP 更新到清單中
+                if (Array.isArray(data)) {
+                    ipList = data;
+                }
+                
+            } catch (e) {
+                console.error("無法取得試算表 IP 列表：", e);
+                // 若失敗則維持空陣列，畫面僅會顯示基礎按鈕
+            } finally {
+                // 不論成功或失敗，都重新繪製按鈕
+                renderIPButtons();
+            }
+        }
 
         function renderIPButtons() {
             const container = document.getElementById('ip-buttons');
@@ -196,6 +223,7 @@
             autoBtn.onclick = function() { setIP('多團', this); };
             container.appendChild(autoBtn);
 
+            // 動態生成試算表中存在的 IP 按鈕
             ipList.forEach(ip => {
                 const btn = document.createElement('button');
                 btn.className = 'btn-small' + (ip === selectedIP ? ' active' : '');
@@ -227,9 +255,12 @@
 
         function autoDetectIP(groupName) {
             if (!groupName || groupName === "無") return "未分類";
+            
+            // 如果從自動抓取的 ipList 中有符合的，就回傳
             for (let known of ipList) {
                 if (groupName.includes(known)) return known;
             }
+            // 若都沒符合，就抓取前四個字元
             let clean = groupName.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '');
             return clean.substring(0, 4) || groupName;
         }
@@ -286,7 +317,7 @@
                     if (priceMatch) {
                         let finalItemIP = (selectedIP === '多團') ? autoDetectIP(currentGroup) : baseIP;
                         products.push({
-                            group: currentGroup, // 保存原始完整的【團名】
+                            group: currentGroup,
                             name: priceMatch[1].trim(),
                             price: parseInt(priceMatch[2]),
                             itemIP: finalItemIP
@@ -343,7 +374,6 @@
             btn.disabled = true;
             btn.innerText = "提交中...";
 
-            // 修正重點：map 裡面的 groupName 改為抓取每個商品各自的 group
             const payload = {
                 action: "registerOrder",
                 data: {
@@ -351,7 +381,7 @@
                     lineName: currentParsedData.customerName,
                     items: currentParsedData.products.map(p => ({
                         itemIP: p.itemIP, 
-                        groupName: p.group, // 每個品項現在都帶上它專屬的【團名】
+                        groupName: p.group, 
                         name: p.name,
                         price: p.price,
                         role: ""
@@ -360,9 +390,10 @@
             };
 
             try {
+                // 注意這裡我移除了 mode: "no-cors"，確保可以正常發送
                 await fetch(API_URL, {
                     method: "POST",
-                    mode: "no-cors",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
                     body: JSON.stringify(payload)
                 });
                 
@@ -372,7 +403,8 @@
                 document.getElementById('other-ip-input').classList.add('hidden');
                 
                 closeModal();
-                renderIPButtons();
+                // 提交完成後重新抓取一次最新的 IP 列表
+                fetchIPs();
             } catch (e) {
                 console.error(e);
                 alert("提交發生錯誤");
