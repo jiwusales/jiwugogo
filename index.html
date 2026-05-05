@@ -128,9 +128,8 @@
         <div id="page-search" class="page">
             <div class="header">訂單查詢</div>
             <div class="card">
-                <label>快速搜尋 (輸入團名或客戶名稱)</label>
+                <label>輸入團名或姓名</label>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="text" id="quick-search-input" placeholder="例如：吉伊卡哇 或 王小明" style="margin: 0; flex: 1;">
                     <button class="btn" id="btn-search-exec" onclick="searchOrders()" style="width: 80px; margin: 0;">搜尋</button>
                 </div>
             </div>
@@ -300,7 +299,7 @@
 
             btn.disabled = true;
             btn.innerText = "搜尋中";
-            list.innerHTML = `<div style="text-align:center; padding:20px; color:#C6AC8F;">正在抓取資料...</div>`;
+            list.innerHTML = `<div style="text-align:center; padding:20px; color:#C6AC8F;">訂單搜尋中 (งᐛ)ว (งᐖ)ว</div>`;
             resultBox.classList.remove('hidden');
 
             try {
@@ -314,10 +313,9 @@
                 if (!data || data.length === 0) {
                     list.innerHTML = `<div style="text-align:center; padding:20px; color:#74512D;">找不到資料</div>`;
                 } else {
-                    // 3-1. 計算總筆數
                     const totalCount = data.length;
                     
-                    // 3-2. 排序與分組
+                    // 3-2. 排序權重
                     const sortedStatuses = Object.keys(statusOrder).sort((a,b) => statusOrder[a] - statusOrder[b]);
                     const statusGroups = {};
                     data.forEach(item => {
@@ -331,25 +329,25 @@
                         <span style="font-size:12px; color:#C6AC8F;">共 ${totalCount} 筆資料</span>
                     </div>`;
 
-                    // 依照權重順序輸出
                     const allStatuses = [...new Set([...sortedStatuses, ...Object.keys(statusGroups)])];
                     
                     allStatuses.forEach(status => {
                         if (!statusGroups[status]) return;
-                        
-                        // 3-2. 不顯示「貨況：」
                         html += `<div class="status-header">${status}</div>`;
 
                         const userGroups = {};
                         statusGroups[status].forEach(item => {
-                            // 3-4. 使用 J 欄付款方式 (payMethod) 作為 Key
-                            const userKey = `${item.lineName}_${item.groupName}_${item.payMethod}`;
+                            // 這裡確保讀取的是後端對應 J 欄的 payMethod
+                            // 如果後端傳回來的 Key 不同，請確認 Apps Script 裡對應 J 欄的名稱
+                            const currentPay = item.payMethod || item.payment || "未填";
+                            const userKey = `${item.lineName}_${item.groupName}_${currentPay}`;
+                            
                             if (!userGroups[userKey]) {
                                 userGroups[userKey] = {
                                     lineName: item.lineName,
                                     groupName: item.groupName,
-                                    payMethod: item.payMethod || "未填", 
-                                    deposit: item.deposit || 0, // 3-5. 訂金 (I欄)
+                                    payMethod: currentPay, 
+                                    deposit: item.deposit || 0,
                                     items: [],
                                     total: 0
                                 };
@@ -361,8 +359,6 @@
                         for (let key in userGroups) {
                             const group = userGroups[key];
                             const tagColor = payColorMap[group.payMethod] || "#ADC2D3";
-                            
-                            // 判斷搜尋類型來決定顯示內容
                             const isSearchGroupName = (group.groupName === keyword);
                             const isSearchUserName = (group.lineName === keyword);
 
@@ -370,14 +366,12 @@
                                 <div class="result-group">
                                     <div class="user-header">
                                         <div>
-                                            <!-- 5-2. 團名查詢時點人名可跳轉 -->
                                             <span class="${isSearchGroupName ? 'link-text' : ''}" 
                                                   onclick="${isSearchGroupName ? `quickTrigger('${group.lineName}')` : ''}"
                                                   style="font-weight:bold; color:var(--highlight); ${isSearchUserName ? 'display:none;' : ''}">${group.lineName}</span>
                                             
                                             <span class="result-tag" style="background:${tagColor};">${group.payMethod}</span>
                                             
-                                            <!-- 4-1. 人名查詢時點團名跳轉 (不加括號) -->
                                             <span class="${isSearchUserName ? 'link-text' : ''}" 
                                                   onclick="${isSearchUserName ? `quickTrigger('${group.groupName}')` : ''}"
                                                   style="font-size:12px; color:#999; ${isSearchGroupName ? 'display:none;' : ''}">${group.groupName}</span>
