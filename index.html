@@ -92,7 +92,7 @@
             <div class="header">訂單登記</div>
             <div class="card">
                 <label>IP分類</label>
-                <div id="ip-hint">請選擇商品所屬 IP：</div>
+                <div id="ip-hint">請選擇單一 IP 或使用自動辨識：</div>
                 <div class="ip-group" id="ip-buttons">
                     <!-- IP 按鈕由 JavaScript 生成 -->
                 </div>
@@ -180,7 +180,7 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbzEaZqaGT4HU2sWDUIiBLQ2TljlaW4YCeupcd_yVf0AlboFATxXSKpkwUwfUWbTuovGKA/exec";
         
         // 預設 IP 列表
-        let ipList = ["吉伊卡哇", "吉伊卡哇樂園", "白熊", "寶可夢", "三麗鷗", "客訂"];
+        let ipList = ["吉伊卡哇", "吉伊卡哇樂園", "白熊", "寶可夢", "三麗鷗", "呪術廻戦", "鏈鋸人", "客訂"];
         let selectedIP = "吉伊卡哇";
         let selectedSheetType = "線上";
         let currentParsedData = null;
@@ -190,7 +190,16 @@
             const container = document.getElementById('ip-buttons');
             container.innerHTML = "";
             
-            // 生成預設與手動新增的按鈕
+            // 1. 多團自動辨識按鈕
+            const autoBtn = document.createElement('button');
+            autoBtn.className = 'btn-small' + (selectedIP === '多團' ? ' active' : '');
+            autoBtn.style.background = (selectedIP === '多團') ? '#B08968' : '#A2D2FF'; // 給它一個顯眼的藍色
+            autoBtn.style.color = (selectedIP === '多團') ? 'white' : '#555';
+            autoBtn.innerText = "✨多團自動辨識";
+            autoBtn.onclick = function() { setIP('多團', this); };
+            container.appendChild(autoBtn);
+
+            // 2. 生成預設與手動新增的按鈕
             ipList.forEach(ip => {
                 const btn = document.createElement('button');
                 btn.className = 'btn-small' + (ip === selectedIP ? ' active' : '');
@@ -199,7 +208,7 @@
                 container.appendChild(btn);
             });
 
-            // 加入「其他」按鈕
+            // 3. 加入「其他」按鈕
             const otherBtn = document.createElement('button');
             otherBtn.className = 'btn-small' + (selectedIP === "其他" ? ' active' : '');
             otherBtn.innerText = "其他";
@@ -210,17 +219,29 @@
         function setIP(val, el) {
             selectedIP = val;
             document.getElementById('other-ip-input').classList.add('hidden');
-            document.querySelectorAll('#ip-buttons .btn-small').forEach(b => b.classList.remove('active'));
-            if(el) el.classList.add('active');
+            renderIPButtons();
         }
 
         function toggleOtherIP(el) {
-            document.querySelectorAll('#ip-buttons .btn-small').forEach(b => b.classList.remove('active'));
-            el.classList.add('active');
+            selectedIP = "其他";
+            renderIPButtons();
             const input = document.getElementById('other-ip-input');
             input.classList.remove('hidden');
             input.focus();
-            selectedIP = "其他";
+        }
+
+        // 自動辨識邏輯：檢查括號內容
+        function autoDetectIP(groupName) {
+            if (!groupName || groupName === "無") return "未分類";
+            
+            // 優先匹配：檢查括號內是否包含現有清單的關鍵字
+            for (let known of ipList) {
+                if (groupName.includes(known)) return known;
+            }
+            
+            // 模糊抓取：沒匹配到就抓括號內前 4 個字 (去掉符號)
+            let clean = groupName.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '');
+            return clean.substring(0, 4) || groupName;
         }
 
         function setSheetType(val, el) {
@@ -249,12 +270,10 @@
             let calculatedTotal = 0;
             let textTotal = 0;
             
-            // 處理 IP 名稱
-            let finalIP = selectedIP;
+            let baseIP = selectedIP;
             if (selectedIP === "其他") {
-                const otherVal = document.getElementById('other-ip-input').value.trim();
-                if (!otherVal) return alert("請輸入手動 IP 名稱");
-                finalIP = otherVal;
+                baseIP = document.getElementById('other-ip-input').value.trim();
+                if (!baseIP) return alert("請輸入手動 IP 名稱");
             }
 
             for (let i = 1; i < lines.length; i++) {
@@ -276,11 +295,14 @@
                     const cleanLine = line.replace(/^\d+\.\s*/, "");
                     const priceMatch = cleanLine.match(/(.+)\$(\d+)/);
                     if (priceMatch) {
+                        // 關鍵點：如果是「多團」模式，就跑 autoDetectIP
+                        let finalItemIP = (selectedIP === '多團') ? autoDetectIP(currentGroup) : baseIP;
+
                         products.push({
                             group: currentGroup,
                             name: priceMatch[1].trim(),
                             price: parseInt(priceMatch[2]),
-                            itemIP: finalIP
+                            itemIP: finalItemIP
                         });
                         calculatedTotal += parseInt(priceMatch[2]);
                     }
@@ -293,18 +315,22 @@
                 customerName,
                 sheet: selectedSheetType,
                 products: products,
-                calculatedTotal,
-                finalIP: finalIP
+                calculatedTotal
             };
 
             let html = `
                 <div class="confirm-line"><b>顧客：</b>${customerName}</div>
                 <div class="confirm-line"><b>分頁：</b>${selectedSheetType}</div>
-                <div class="confirm-line"><b>IP 分類：</b>${finalIP}</div>
-                <div style="max-height: 200px; overflow-y: auto; margin-top: 10px; border-bottom: 1px solid #eee;">
+                <div style="max-height: 250px; overflow-y: auto; margin-top: 10px; border-bottom: 1px solid #eee;">
             `;
 
+            let lastIP = "";
             products.forEach(p => {
+                // 如果 IP 跟上一個不同，顯示一個小標籤提示
+                if (selectedIP === '多團' && p.itemIP !== lastIP) {
+                    html += `<div style="background:#f8f1ed; color:#b08968; font-size:11px; padding:2px 8px; margin-top:10px; border-radius:4px;">分類：${p.itemIP}</div>`;
+                    lastIP = p.itemIP;
+                }
                 html += `<div style="padding:4px 8px; display:flex; justify-content:space-between;">
                             <span>· ${p.name}</span>
                             <span>$${p.price}</span>
@@ -336,6 +362,7 @@
                 data: {
                     sheetName: currentParsedData.sheet,
                     lineName: currentParsedData.customerName,
+                    // 取第一個商品的團名作為參考
                     groupName: currentParsedData.products[0].group,
                     items: currentParsedData.products.map(p => ({
                         itemIP: p.itemIP, 
@@ -353,18 +380,13 @@
                     body: JSON.stringify(payload)
                 });
                 
-                // 如果是新 IP，加入到選單中
-                if (!ipList.includes(currentParsedData.finalIP)) {
-                    ipList.push(currentParsedData.finalIP);
-                }
-                
                 alert("登記完成！");
                 document.getElementById('quick-input').value = "";
                 document.getElementById('other-ip-input').value = "";
                 document.getElementById('other-ip-input').classList.add('hidden');
                 
                 closeModal();
-                renderIPButtons(); // 重新渲染，新 IP 就會出現在按鈕區
+                renderIPButtons();
             } catch (e) {
                 console.error(e);
                 alert("提交發生錯誤");
