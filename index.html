@@ -63,6 +63,7 @@
 
         .btn { background: var(--primary); border: none; padding: 12px 15px; border-radius: 10px; color: var(--btn-text); font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px; transition: 0.3s; }
         .btn:active { opacity: 0.8; }
+        .btn:disabled { background: #ccc; cursor: not-allowed; }
         
         .btn-small { width: auto; padding: 5px 12px; font-size: 12px; margin: 2px; background: var(--accent); border: none; border-radius: 8px; color: var(--text); cursor: pointer; transition: 0.2s; }
         .btn-small.active { background: var(--highlight); color: white; }
@@ -84,6 +85,10 @@
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(116, 81, 45, 0.4); z-index: 2000; display: flex; align-items: center; justify-content: center; }
         .confirm-card { background: white; width: 85%; max-width: 400px; border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         .confirm-line { border-bottom: 1px solid #F5EBE0; padding: 10px 0; }
+
+        /* 查詢結果樣式 */
+        .result-item { border-bottom: 1px solid #eee; padding: 10px 0; }
+        .result-tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 5px; background: var(--accent); color: var(--text); }
     </style>
 </head>
 <body onload="fetchIPs()">
@@ -107,27 +112,23 @@
                 </div>
 
                 <label>快速輸入 (顧客名稱 + 訂單內容)</label>
-                <!-- 補回缺失的 textarea -->
                 <textarea id="quick-input" rows="8" placeholder="請貼上訂單格式..."></textarea>
                 
                 <button class="btn" onclick="parseAndConfirm()">內容確認</button>
             </div>
         </div>
 
-        <!-- 頁面 2: 訂單查詢 (已優化) -->
+        <!-- 頁面 2: 訂單查詢 (已改為快速輸入框) -->
         <div id="page-search" class="page">
             <div class="header">訂單查詢</div>
             <div class="card">
-                <div style="display: flex; gap: 10px;">
-                    <button id="btn-query-date" class="btn-small active" style="flex:1" onclick="showQueryUI('date')">日期查詢</button>
-                    <button id="btn-query-user" class="btn-small" style="flex:1" onclick="showQueryUI('user')">名字查詢</button>
-                </div>
-                <div id="query-ui" style="margin-top: 15px;">
-                    <!-- 預設顯示日期查詢 -->
-                    <input type="date" id="query-date-val">
-                    <button class="btn" onclick="alert('日期搜尋功能串接中...')">搜尋日期</button>
+                <label>快速搜尋 (輸入團名或客戶名稱)</label>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <input type="text" id="quick-search-input" placeholder="例如：吉伊卡哇 或 王小明" style="margin: 0; flex: 1;">
+                    <button class="btn" id="btn-search-exec" onclick="searchOrders()" style="width: 80px; margin: 0;">搜尋</button>
                 </div>
             </div>
+            
             <!-- 查詢結果顯示區 -->
             <div id="search-results" class="card hidden">
                 <div id="search-results-list"></div>
@@ -217,9 +218,7 @@
             container.innerHTML = "";
             const autoBtn = document.createElement('button');
             autoBtn.className = 'btn-small';
-            if (selectedIP === '多團') {
-                autoBtn.classList.add('active');
-            }
+            if (selectedIP === '多團') autoBtn.classList.add('active');
             autoBtn.innerText = "自動辨識";
             autoBtn.onclick = function() { setIP('多團', this); };
             container.appendChild(autoBtn);
@@ -275,6 +274,61 @@
             element.classList.add('active');
         }
 
+        // --- 查詢功能核心邏輯 ---
+        async function searchOrders() {
+            const keyword = document.getElementById('quick-search-input').value.trim();
+            if (!keyword) return alert("請輸入查詢關鍵字");
+
+            const btn = document.getElementById('btn-search-exec');
+            const resultBox = document.getElementById('search-results');
+            const list = document.getElementById('search-results-list');
+
+            btn.disabled = true;
+            btn.innerText = "搜尋中";
+            list.innerHTML = `<div style="text-align:center; padding:20px; color:#C6AC8F;">正在從試算表抓取資料...</div>`;
+            resultBox.classList.remove('hidden');
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ 
+                        action: "queryOrder", 
+                        keyword: keyword 
+                    })
+                });
+                const data = await response.json();
+
+                if (!data || data.length === 0) {
+                    list.innerHTML = `<div style="text-align:center; padding:20px; color:#74512D;">找不到關於「${keyword}」的資料</div>`;
+                } else {
+                    let html = `<div style="font-weight:bold; margin-bottom:10px; border-bottom:2px solid var(--accent); padding-bottom:5px;">搜尋結果：${data.length} 筆</div>`;
+                    data.forEach(item => {
+                        html += `
+                            <div class="result-item">
+                                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                                    <span style="font-weight:bold; color:var(--highlight);">${item.lineName || '未知客戶'}</span>
+                                    <span style="color:#B08968; font-weight:bold;">$${item.price || 0}</span>
+                                </div>
+                                <div style="font-size:13px; margin:4px 0;">${item.name || '無商品名稱'}</div>
+                                <div style="font-size:11px; color:#999;">
+                                    <span class="result-tag">${item.sheetName || '一般'}</span>
+                                    <span>【${item.groupName || '無團名'}】</span>
+                                </div>
+                            </div>`;
+                    });
+                    list.innerHTML = html;
+                }
+            } catch (e) {
+                console.error(e);
+                list.innerHTML = `<div style="text-align:center; padding:20px; color:red;">連線失敗，請檢查網路或 API 設定</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "搜尋";
+            }
+        }
+
+        // --- 登記功能核心邏輯 ---
         function parseAndConfirm() {
             const rawText = document.getElementById('quick-input').value.trim();
             if (!rawText) return alert("請輸入內容");
@@ -407,17 +461,6 @@
                 btn.disabled = false;
                 btn.innerText = "確認並輸入試算表";
             }
-        }
-
-        function showQueryUI(type) {
-            const ui = document.getElementById('query-ui');
-            // 切換按鈕 active 狀態
-            document.getElementById('btn-query-date').classList.toggle('active', type === 'date');
-            document.getElementById('btn-query-user').classList.toggle('active', type === 'user');
-
-            ui.innerHTML = type === 'date' 
-                ? `<input type="date" id="query-date-val"><button class="btn" onclick="alert('日期搜尋中...')">搜尋日期</button>` 
-                : `<input type="text" id="query-user-val" placeholder="請輸入顧客名稱"><button class="btn" onclick="alert('顧客搜尋中...')">搜尋顧客</button>`;
         }
 
         function toggle(id) {
