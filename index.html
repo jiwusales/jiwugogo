@@ -9,10 +9,11 @@
             --bg: #EEE5E0;          /* 背景 */
             --card-bg: #FFFFFF;     /* 卡片 */
             --primary: #D5BDAF;     /* 柔和深奶茶 */
-            --text: #FFFFFF;        /* 文字 */
+            --text: #74512D;        /* 文字修正為深咖啡色 */
             --accent: #E3D5CA;      /* 淺奶茶色 */
             --highlight: #B08968;   /* 強調色 */
             --nav-bg: #FFFFFF;
+            --btn-text: #FFFFFF;    /* 按鈕上的文字顏色 */
         }
 
         body {
@@ -22,14 +23,13 @@
             margin: 0;
             padding: 0;
             font-size: 14px;
-            padding-bottom: 80px; /* 為底部選單留空間 */
+            padding-bottom: 80px; 
         }
 
         .container { padding: 15px; max-width: 500px; margin: 0 auto; }
         .header { text-align: center; font-size: 1.2rem; font-weight: bold; margin: 20px 0; letter-spacing: 1px; color: var(--highlight); }
         .card { background: var(--card-bg); border-radius: 18px; padding: 18px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); margin-bottom: 20px; }
         
-        /* 底部選單導覽列 */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -37,7 +37,7 @@
             background: var(--nav-bg);
             display: flex;
             justify-content: space-around;
-            padding: 10px 0;
+            padding: 12px 0;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
             z-index: 1000;
         }
@@ -48,28 +48,28 @@
             align-items: center;
             color: #A68A7B;
             text-decoration: none;
-            font-size: 10px;
+            font-size: 11px;
             cursor: pointer;
             transition: 0.3s;
+            flex: 1;
         }
 
         .nav-item.active { color: var(--highlight); font-weight: bold; }
-        .nav-item i { font-size: 20px; margin-bottom: 4px; }
+        .nav-item span { margin-top: 2px; }
 
-        /* 分頁切換邏輯 */
         .page { display: none; }
         .page.active { display: block; }
 
-        /* 通用元件風格 */
-        .btn { background: var(--primary); border: none; padding: 10px 15px; border-radius: 10px; color: var(--text); font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px; }
+        .btn { background: var(--primary); border: none; padding: 12px 15px; border-radius: 10px; color: var(--btn-text); font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px; }
         .btn-small { width: auto; padding: 5px 12px; font-size: 12px; margin: 2px; background: var(--accent); border: none; border-radius: 8px; color: var(--text); }
-        input { width: 100%; padding: 12px; border: 1.5px solid var(--accent); border-radius: 10px; margin: 8px 0; box-sizing: border-box; outline: none; }
-        .tag { background: var(--accent); padding: 4px 12px; border-radius: 15px; font-size: 12px; white-space: nowrap; cursor: pointer; display: inline-block; margin-right: 5px; }
+        input, select { width: 100%; padding: 12px; border: 1.5px solid var(--accent); border-radius: 10px; margin: 8px 0; box-sizing: border-box; outline: none; background: #fff; color: var(--text); font-size: 14px; }
+        label { font-weight: bold; font-size: 12px; margin-top: 8px; display: block; color: var(--highlight); }
+        
+        .tag { background: var(--accent); padding: 4px 12px; border-radius: 15px; font-size: 12px; white-space: nowrap; cursor: pointer; display: inline-block; margin-right: 5px; color: var(--text); }
         .tag.active { background: var(--highlight); color: white; }
 
-        /* 內容樣式 */
-        .order-row { border-bottom: 1px solid #f8f8f8; padding: 12px 0; }
-        .detail-pane { background: #FCF9F6; padding: 12px; border-radius: 10px; margin-top: 8px; display: none; }
+        .order-row { border-bottom: 1px solid #f8f8f8; padding: 12px 0; color: var(--text); }
+        .detail-pane { background: #FCF9F6; padding: 12px; border-radius: 10px; margin-top: 8px; display: none; color: var(--text); }
         .hidden { display: none; }
     </style>
 </head>
@@ -77,13 +77,44 @@
 
     <div class="container">
         
-        <!-- 頁面 1: 訂單查詢 -->
-        <div id="page-search" class="page active">
+        <!-- 頁面 1: 訂單登記 -->
+        <div id="page-add" class="page active">
+            <div class="header">訂單登記</div>
+            <div class="card">
+                <label>顧客名稱</label>
+                <input type="text" id="reg-name" placeholder="請輸入 LINE 名稱">
+                
+                <label>角色分類</label>
+                <select id="reg-ip">
+                    <option value="吉伊卡哇">吉伊卡哇</option>
+                    <option value="咒術迴戰">咒術迴戰</option>
+                    <option value="SAKAMOTO DAYS">SAKAMOTO DAYS</option>
+                </select>
+
+                <label>品項</label>
+                <input type="text" id="reg-item" placeholder="例如：壓克力立牌">
+
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label>單價</label>
+                        <input type="number" id="reg-price" placeholder="0">
+                    </div>
+                    <div style="flex: 1;">
+                        <label>數量</label>
+                        <input type="number" id="reg-qty" value="1">
+                    </div>
+                </div>
+                <button class="btn" onclick="submitOrder()">確認登記</button>
+            </div>
+        </div>
+
+        <!-- 頁面 2: 訂單查詢 -->
+        <div id="page-search" class="page">
             <div class="header">訂單查詢</div>
             <div class="card">
                 <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-small" style="flex:1" onclick="showQueryUI('date')">📅 日期查詢</button>
-                    <button class="btn btn-small" style="flex:1" onclick="showQueryUI('user')">👤 名字查詢</button>
+                    <button class="btn btn-small" style="flex:1" onclick="showQueryUI('date')">日期查詢</button>
+                    <button class="btn btn-small" style="flex:1" onclick="showQueryUI('user')">名字查詢</button>
                 </div>
                 <div id="query-ui" style="margin-top: 15px;">
                     <p style="text-align:center; color:#ccc;">選擇方式開始查詢</p>
@@ -91,40 +122,39 @@
             </div>
         </div>
 
-        <!-- 頁面 2: 下單紀錄 -->
+        <!-- 頁面 3: 下單紀錄 -->
         <div id="page-record" class="page">
             <div class="header">下單紀錄</div>
             <div class="card">
                 <div class="tag active">5月</div><div class="tag">4月</div>
                 <div id="record-list" style="margin-top: 15px;">
-                    <div class="order-row">📂 2026-05-01 訂單列表...</div>
-                    <!-- 這裡放當月所有訂單的概覽 -->
+                    <div class="order-row">目前尚無紀錄</div>
                 </div>
             </div>
         </div>
 
-        <!-- 頁面 3: 庫存管理 (含寶寶點名) -->
+        <!-- 頁面 4: 庫存管理 -->
         <div id="page-inventory" class="page">
             <div class="header">庫存與打包</div>
             <div class="card">
-                <div class="order-row" onclick="toggle('pack-detail')">📦 待打包區 (點擊展開)</div>
+                <div class="order-row" onclick="toggle('pack-detail')">待打包區 (點擊展開)</div>
                 <div id="pack-detail" class="detail-pane">
-                    <label><input type="checkbox" style="width:auto;"> ORD-551 (吉伊)</label><br>
+                    <label><input type="checkbox" style="width:auto;"> ORD-001 (預設商品)</label><br>
                     <input type="number" placeholder="重量 kg">
                     <button class="btn btn-small">確認打包</button>
                 </div>
-                <button class="btn" style="margin-top:20px;" onclick="babyCount()">👶 寶寶點名統計</button>
+                <button class="btn" style="margin-top:20px;" onclick="babyCount()">寶寶點名統計</button>
             </div>
         </div>
 
-        <!-- 頁面 4: 出貨區 -->
+        <!-- 頁面 5: 出貨區 -->
         <div id="page-shipping" class="page">
             <div class="header">出貨狀態</div>
             <div class="card">
                 <input type="text" id="ship-search" placeholder="輸入關鍵字...">
                 <button class="btn" onclick="alert('搜尋中...')">搜尋貨況</button>
                 <div id="ship-results" style="margin-top:15px;">
-                    <div style="color:var(--highlight); font-weight:bold;">● 近期到貨</div>
+                    <div style="color:var(--highlight); font-weight:bold;">近期到貨</div>
                     <p style="font-size: 12px; color: #999;">目前尚無新到貨資料</p>
                 </div>
             </div>
@@ -134,20 +164,19 @@
 
     <!-- 底部導覽列 -->
     <div class="bottom-nav">
-        <div class="nav-item active" onclick="switchPage('search', this)">
-            <span>🔍</span>
+        <div class="nav-item active" onclick="switchPage('add', this)">
+            <span>登記</span>
+        </div>
+        <div class="nav-item" onclick="switchPage('search', this)">
             <span>查詢</span>
         </div>
         <div class="nav-item" onclick="switchPage('record', this)">
-            <span>📝</span>
             <span>紀錄</span>
         </div>
         <div class="nav-item" onclick="switchPage('inventory', this)">
-            <span>📦</span>
             <span>庫存</span>
         </div>
         <div class="nav-item" onclick="switchPage('shipping', this)">
-            <span>🚚</span>
             <span>出貨</span>
         </div>
     </div>
@@ -162,16 +191,30 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbzEaZqaGT4HU2sWDUIiBLQ2TljlaW4YCeupcd_yVf0AlboFATxXSKpkwUwfUWbTuovGKA/exec";
 
-        // 切換頁面功能
         function switchPage(pageId, element) {
-            // 隱藏所有頁面
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            // 顯示目標頁面
             document.getElementById('page-' + pageId).classList.add('active');
-            
-            // 更新選單樣式
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             element.classList.add('active');
+        }
+
+        async function submitOrder() {
+            const data = {
+                name: document.getElementById('reg-name').value,
+                ip: document.getElementById('reg-ip').value,
+                item: document.getElementById('reg-item').value,
+                price: document.getElementById('reg-price').value,
+                qty: document.getElementById('reg-qty').value
+            };
+            if(!data.name || !data.item) return alert("請填寫姓名與品項");
+            
+            try {
+                // 提交邏輯預留
+                console.log("Submitting:", data);
+                alert("已提交登記資料");
+            } catch (e) {
+                alert("提交失敗");
+            }
         }
 
         function showQueryUI(type) {
