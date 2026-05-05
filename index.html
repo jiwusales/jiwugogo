@@ -107,26 +107,34 @@
                 </div>
 
                 <label>快速輸入 (顧客名稱 + 訂單內容)</label>
+                <!-- 補回缺失的 textarea -->
+                <textarea id="quick-input" rows="8" placeholder="請貼上訂單格式..."></textarea>
                 
                 <button class="btn" onclick="parseAndConfirm()">內容確認</button>
             </div>
         </div>
 
-        <!-- 查詢頁面 -->
+        <!-- 頁面 2: 訂單查詢 (已優化) -->
         <div id="page-search" class="page">
             <div class="header">訂單查詢</div>
             <div class="card">
                 <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-small" style="flex:1" onclick="showQueryUI('date')">日期查詢</button>
-                    <button class="btn btn-small" style="flex:1" onclick="showQueryUI('user')">名字查詢</button>
+                    <button id="btn-query-date" class="btn-small active" style="flex:1" onclick="showQueryUI('date')">日期查詢</button>
+                    <button id="btn-query-user" class="btn-small" style="flex:1" onclick="showQueryUI('user')">名字查詢</button>
                 </div>
                 <div id="query-ui" style="margin-top: 15px;">
-                    <p style="text-align:center; color:#C6AC8F;">開始查詢</p>
+                    <!-- 預設顯示日期查詢 -->
+                    <input type="date" id="query-date-val">
+                    <button class="btn" onclick="alert('日期搜尋功能串接中...')">搜尋日期</button>
                 </div>
+            </div>
+            <!-- 查詢結果顯示區 -->
+            <div id="search-results" class="card hidden">
+                <div id="search-results-list"></div>
             </div>
         </div>
 
-        <!-- 紀錄頁面 -->
+        <!-- 頁面 3: 紀錄頁面 -->
         <div id="page-record" class="page">
             <div class="header">下單紀錄</div>
             <div class="card">
@@ -136,7 +144,7 @@
             </div>
         </div>
 
-        <!-- 庫存頁面 -->
+        <!-- 頁面 4: 庫存頁面 -->
         <div id="page-inventory" class="page">
             <div class="header">庫存與打包</div>
             <div class="card">
@@ -148,7 +156,7 @@
             </div>
         </div>
 
-        <!-- 出貨頁面 -->
+        <!-- 頁面 5: 出貨頁面 -->
         <div id="page-shipping" class="page">
             <div class="header">出貨狀態</div>
             <div class="card">
@@ -403,9 +411,13 @@
 
         function showQueryUI(type) {
             const ui = document.getElementById('query-ui');
+            // 切換按鈕 active 狀態
+            document.getElementById('btn-query-date').classList.toggle('active', type === 'date');
+            document.getElementById('btn-query-user').classList.toggle('active', type === 'user');
+
             ui.innerHTML = type === 'date' 
-                ? `<input type="date"><button class="btn">搜尋日期</button>` 
-                : `<input type="text" placeholder="請輸入顧客名稱"><button class="btn">搜尋顧客</button>`;
+                ? `<input type="date" id="query-date-val"><button class="btn" onclick="alert('日期搜尋中...')">搜尋日期</button>` 
+                : `<input type="text" id="query-user-val" placeholder="請輸入顧客名稱"><button class="btn" onclick="alert('顧客搜尋中...')">搜尋顧客</button>`;
         }
 
         function toggle(id) {
