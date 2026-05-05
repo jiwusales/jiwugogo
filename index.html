@@ -179,27 +179,23 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbzEaZqaGT4HU2sWDUIiBLQ2TljlaW4YCeupcd_yVf0AlboFATxXSKpkwUwfUWbTuovGKA/exec";
         
-        // 預設 IP 列表
-        let ipList = ["吉伊卡哇", "吉伊卡哇樂園", "白熊", "寶可夢", "三麗鷗", "呪術廻戦", "鏈鋸人", "客訂"];
+        let ipList = ["吉伊卡哇", "吉伊卡哇樂園", "白熊", "寶可夢", "三麗鷗", "呪術廻戰", "鏈鋸人", "客訂"];
         let selectedIP = "吉伊卡哇";
         let selectedSheetType = "線上";
         let currentParsedData = null;
 
-        // 生成 IP 按鈕
         function renderIPButtons() {
             const container = document.getElementById('ip-buttons');
             container.innerHTML = "";
             
-            // 1. 多團自動辨識按鈕
             const autoBtn = document.createElement('button');
             autoBtn.className = 'btn-small' + (selectedIP === '多團' ? ' active' : '');
-            autoBtn.style.background = (selectedIP === '多團') ? '#B08968' : '#A2D2FF'; // 給它一個顯眼的藍色
+            autoBtn.style.background = (selectedIP === '多團') ? '#B08968' : '#A2D2FF';
             autoBtn.style.color = (selectedIP === '多團') ? 'white' : '#555';
             autoBtn.innerText = "✨多團自動辨識";
             autoBtn.onclick = function() { setIP('多團', this); };
             container.appendChild(autoBtn);
 
-            // 2. 生成預設與手動新增的按鈕
             ipList.forEach(ip => {
                 const btn = document.createElement('button');
                 btn.className = 'btn-small' + (ip === selectedIP ? ' active' : '');
@@ -208,7 +204,6 @@
                 container.appendChild(btn);
             });
 
-            // 3. 加入「其他」按鈕
             const otherBtn = document.createElement('button');
             otherBtn.className = 'btn-small' + (selectedIP === "其他" ? ' active' : '');
             otherBtn.innerText = "其他";
@@ -230,16 +225,11 @@
             input.focus();
         }
 
-        // 自動辨識邏輯：檢查括號內容
         function autoDetectIP(groupName) {
             if (!groupName || groupName === "無") return "未分類";
-            
-            // 優先匹配：檢查括號內是否包含現有清單的關鍵字
             for (let known of ipList) {
                 if (groupName.includes(known)) return known;
             }
-            
-            // 模糊抓取：沒匹配到就抓括號內前 4 個字 (去掉符號)
             let clean = groupName.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '');
             return clean.substring(0, 4) || groupName;
         }
@@ -278,7 +268,6 @@
 
             for (let i = 1; i < lines.length; i++) {
                 const line = lines[i];
-
                 const groupMatch = line.match(/【(.+)】/);
                 if (groupMatch) {
                     currentGroup = groupMatch[1];
@@ -295,11 +284,9 @@
                     const cleanLine = line.replace(/^\d+\.\s*/, "");
                     const priceMatch = cleanLine.match(/(.+)\$(\d+)/);
                     if (priceMatch) {
-                        // 關鍵點：如果是「多團」模式，就跑 autoDetectIP
                         let finalItemIP = (selectedIP === '多團') ? autoDetectIP(currentGroup) : baseIP;
-
                         products.push({
-                            group: currentGroup,
+                            group: currentGroup, // 保存原始完整的【團名】
                             name: priceMatch[1].trim(),
                             price: parseInt(priceMatch[2]),
                             itemIP: finalItemIP
@@ -324,12 +311,11 @@
                 <div style="max-height: 250px; overflow-y: auto; margin-top: 10px; border-bottom: 1px solid #eee;">
             `;
 
-            let lastIP = "";
+            let lastGroupName = "";
             products.forEach(p => {
-                // 如果 IP 跟上一個不同，顯示一個小標籤提示
-                if (selectedIP === '多團' && p.itemIP !== lastIP) {
-                    html += `<div style="background:#f8f1ed; color:#b08968; font-size:11px; padding:2px 8px; margin-top:10px; border-radius:4px;">分類：${p.itemIP}</div>`;
-                    lastIP = p.itemIP;
+                if (p.group !== lastGroupName) {
+                    html += `<div style="background:#f8f1ed; color:#b08968; font-size:11px; padding:2px 8px; margin-top:10px; border-radius:4px;">團名：【${p.group}】</div>`;
+                    lastGroupName = p.group;
                 }
                 html += `<div style="padding:4px 8px; display:flex; justify-content:space-between;">
                             <span>· ${p.name}</span>
@@ -357,15 +343,15 @@
             btn.disabled = true;
             btn.innerText = "提交中...";
 
+            // 修正重點：map 裡面的 groupName 改為抓取每個商品各自的 group
             const payload = {
                 action: "registerOrder",
                 data: {
                     sheetName: currentParsedData.sheet,
                     lineName: currentParsedData.customerName,
-                    // 取第一個商品的團名作為參考
-                    groupName: currentParsedData.products[0].group,
                     items: currentParsedData.products.map(p => ({
                         itemIP: p.itemIP, 
+                        groupName: p.group, // 每個品項現在都帶上它專屬的【團名】
                         name: p.name,
                         price: p.price,
                         role: ""
