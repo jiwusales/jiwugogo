@@ -63,7 +63,7 @@
         .confirm-card { background: white; width: 85%; max-width: 400px; border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         
         .pay-selector { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; padding: 10px; background: #fdfdfd; border: 1px dashed var(--accent); border-radius: 10px; }
-        .deposit-input { width: 60px !important; padding: 4px !important; margin: 0 !important; font-size: 11px !important; text-align: center; border-color: #FB9E09 !important; }
+        .deposit-input { width: 50px !important; padding: 2px !important; margin: 0 !important; font-size: 11px !important; text-align: center; border-color: #FB9E09 !important; height: 20px; vertical-align: middle; }
 
         .type-group { display: flex; gap: 10px; margin: 8px 0; }
         .type-item { flex: 1; padding: 10px; text-align: center; background: var(--accent); border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; }
@@ -152,14 +152,13 @@
         const payColorMap = { "中信": "#599D9C", "LPay": "#00B900", "現金": "#FDD55E", "無卡": "#ADC2D3", "LBank": "#1E77BD", "IPass": "#F09163", "未填": "#ADC2D3" };
         const statusOrder = { "已到貨": 1, "預購中": 2, "出貨完畢": 3 };
 
-        // 啟動時先讀取快取
         function initApp() {
             const cachedIPs = localStorage.getItem('cached_ip_list');
             if (cachedIPs) {
                 ipList = JSON.parse(cachedIPs);
                 renderIPButtons();
             }
-            fetchIPs(); // 仍然進行網路請求，同步最新資料
+            fetchIPs();
         }
 
         async function fetchIPs() {
@@ -168,24 +167,20 @@
                 const data = await response.json();
                 if (Array.isArray(data)) { 
                     ipList = data; 
-                    localStorage.setItem('cached_ip_list', JSON.stringify(data)); // 更新快取
+                    localStorage.setItem('cached_ip_list', JSON.stringify(data));
                     renderIPButtons(); 
                 }
-            } catch (e) { 
-                console.error(e); 
-            }
+            } catch (e) { console.error(e); }
         }
 
         function renderIPButtons() {
             const container = document.getElementById('ip-buttons');
             container.innerHTML = "";
-
             const autoBtn = document.createElement('button');
             autoBtn.className = 'btn-small' + (selectedIP === '多團' ? ' active' : '');
             autoBtn.innerText = "自動辨識"; 
             autoBtn.onclick = () => setIP('多團');
             container.appendChild(autoBtn);
-
             ipList.forEach(ip => {
                 const btn = document.createElement('button');
                 btn.className = 'btn-small' + (ip === selectedIP ? ' active' : '');
@@ -239,7 +234,7 @@
                 html += `<div class="status-header">${status}</div>`;
                 const userGroups = {};
                 statusGroups[status].forEach(item => {
-                    const pay = item.payMethod || item.payment || item.pay || item['付款方式'] || "未填";
+                    const pay = item.payMethod || "未填";
                     const key = `${item.lineName}_${item.groupName}_${pay}_${item.rowIndex}`; 
                     if (!userGroups[key]) {
                         userGroups[key] = { name: item.lineName, group: item.groupName, pay: pay, deposit: item.deposit, items: [], total: 0, rowIndex: item.rowIndex };
@@ -250,26 +245,28 @@
 
                 for (let k in userGroups) {
                     const g = userGroups[k];
-                    const tagColor = payColorMap[g.pay] || "#ADC2D3";
+                    const tagColor = payColorMap[g.pay.split('(')[0]] || "#ADC2D3";
                     const isPayEmpty = g.pay === "未填";
-                    const isDepositEmpty = !g.deposit || g.deposit === "";
+                    const isDepositEmpty = !g.deposit || g.deposit === "" || g.deposit === 0;
 
                     html += `<div class="result-group" id="group-${g.rowIndex}">
                         <div class="user-header">
                             <div>
-                                <span class="result-tag ${isPayEmpty?'tag-clickable':''}" 
+                                <span class="result-tag tag-clickable" id="pay-tag-${g.rowIndex}"
                                       style="background:${tagColor}" 
-                                      onclick="${isPayEmpty ? `showPayOptions(${g.rowIndex}, '${g.name}')` : ''}">${g.pay}</span>
+                                      onclick="showPayOptions(${g.rowIndex}, '${g.name}')">${g.pay}</span>
                                 <span class="link-text" onclick="quickTrigger('${g.name}')" style="font-weight:bold; color:var(--highlight);">${g.name}</span>
                                 <span style="font-size:11px; color:#999; margin-left:5px;">${g.group}</span>
                             </div>
                             <div style="font-weight:bold; display:flex; align-items:center;">
                                 $${g.total} 
-                                <span style="font-size:11px; color:#FB9E09; margin-left:5px;">(訂:
+                                <span style="font-size:11px; color:#FB9E09; margin-left:5px;">訂金：
+                                    <span id="deposit-display-${g.rowIndex}">
                                     ${isDepositEmpty ? 
                                         `<input type="number" class="deposit-input" placeholder="0" onchange="updateField(${g.rowIndex}, 'deposit', this.value)">` : 
                                         g.deposit}
-                                )</span>
+                                    </span>
+                                </span>
                             </div>
                         </div>
                         <div id="pay-box-${g.rowIndex}" class="hidden"></div>
@@ -292,7 +289,7 @@
                     ).join('')}
                 </div>
                 <div id="bank-input-${rowIndex}" class="hidden" style="margin-top:5px;">
-                    <input type="text" placeholder="輸入後五碼" id="code-${rowIndex}" style="padding:8px; width:70%;">
+                    <input type="text" placeholder="輸入後五碼" id="code-${rowIndex}" style="padding:8px; width:60%;">
                     <button class="btn-small active" onclick="confirmBankPay(${rowIndex})">確認</button>
                 </div>
             `;
@@ -310,19 +307,30 @@
         function confirmBankPay(rowIndex) {
             const method = document.getElementById(`bank-input-${rowIndex}`).dataset.method;
             const code = document.getElementById(`code-${rowIndex}`).value;
-            if (!code) return alert("請輸入後五碼");
+            if (!code) return alert("輸入後五碼");
             updateField(rowIndex, 'payMethod', `${method}(${code})`);
         }
 
         async function updateField(rowIndex, field, value) {
-            if (!value) return;
+            if (!value && value !== 0) return;
             try {
-                await fetch(API_URL, { 
+                const response = await fetch(API_URL, { 
                     method: "POST", 
                     body: JSON.stringify({ action: "updateOrderField", rowIndex: rowIndex, field: field, value: value }) 
                 });
-                alert("更新成功！");
-                searchOrders(); 
+                
+                // 局部更新 UI，不重新搜尋
+                if (field === 'payMethod') {
+                    const tag = document.getElementById(`pay-tag-${rowIndex}`);
+                    const cleanMethod = value.split('(')[0];
+                    tag.innerText = value;
+                    tag.style.background = payColorMap[cleanMethod] || "#ADC2D3";
+                    document.getElementById(`pay-box-${rowIndex}`).classList.add('hidden');
+                } else if (field === 'deposit') {
+                    document.getElementById(`deposit-display-${rowIndex}`).innerText = value;
+                }
+                
+                console.log("更新成功");
             } catch (e) { alert("更新失敗"); }
         }
 
