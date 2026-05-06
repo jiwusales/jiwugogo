@@ -30,73 +30,41 @@
         }
 
         .container { padding: 15px; max-width: 500px; margin: 0 auto; }
-        
-        /* 標題樣式 - 已移除重整圖示相關設定 */
-        .header-wrapper {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            margin: 20px 0;
-        }
+        .header-wrapper { display: flex; justify-content: center; align-items: center; position: relative; margin: 20px 0; }
         .header { font-size: 1.2rem; font-weight: bold; letter-spacing: 1px; color: var(--title-color); margin: 0; }
-
         .card { background: var(--card-bg); border-radius: 18px; padding: 18px; box-shadow: 0 4px 15px rgba(116, 81, 45, 0.05); margin-bottom: 20px; }
         
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            background: var(--nav-bg);
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 0 25px 0;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-            z-index: 1000;
-        }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            color: #C6AC8F;
-            text-decoration: none;
-            font-size: 12px;
-            cursor: pointer;
-            transition: 0.3s;
-            flex: 1;
-        }
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: var(--nav-bg); display: flex; justify-content: space-around; padding: 10px 0 25px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 1000; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #C6AC8F; text-decoration: none; font-size: 12px; cursor: pointer; transition: 0.3s; flex: 1; }
         .nav-item.active { color: var(--highlight); font-weight: bold; }
 
         .page { display: none; }
         .page.active { display: block; }
 
         .btn { background: var(--primary); border: none; padding: 12px 15px; border-radius: 10px; color: var(--btn-text); font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px; transition: 0.3s; }
-        .btn:disabled { background: #ccc; cursor: not-allowed; }
-        
         .btn-small { width: auto; padding: 5px 12px; font-size: 12px; margin: 2px; background: var(--accent); border: none; border-radius: 8px; color: var(--text); cursor: pointer; }
         .btn-small.active { background: var(--highlight); color: white; }
 
         input, select, textarea { width: 100%; padding: 12px; border: 1.5px solid var(--accent); border-radius: 10px; margin: 8px 0; box-sizing: border-box; outline: none; background: #fff; color: var(--text); font-size: 16px; }
         label { font-weight: bold; font-size: 12px; margin-top: 8px; display: block; color: var(--highlight); }
         
-        .ip-group { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0; }
-        .type-group { display: flex; gap: 10px; margin: 8px 0; }
-        .type-item { flex: 1; text-align: center; padding: 10px; border-radius: 10px; background: var(--accent); cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .type-item.active { background: var(--highlight); color: white; }
-
         .result-group { border-bottom: 1px solid #eee; padding: 15px 0; position: relative; }
         .items-container { border-left: 2px solid var(--accent); margin-left: 5px; padding-left: 10px; }
         .item-line { display: flex; justify-content: space-between; font-size: 13px; margin: 6px 0; }
         
         .user-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .result-tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin-right: 5px; color: white; font-weight: bold; }
+        .result-tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin-right: 5px; color: white; font-weight: bold; cursor: default; }
+        .tag-clickable { cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .status-header { background: #F5EBE0; padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; margin-top: 15px; color: #74512D; }
         
         .link-text { cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
         .hidden { display: none !important; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(116, 81, 45, 0.4); z-index: 2000; display: flex; align-items: center; justify-content: center; }
         .confirm-card { background: white; width: 85%; max-width: 400px; border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        
+        /* 付款選擇樣式 */
+        .pay-selector { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; padding: 10px; background: #fdfdfd; border: 1px dashed var(--accent); border-radius: 10px; }
+        .deposit-input { width: 60px !important; padding: 4px !important; margin: 0 !important; font-size: 11px !important; text-align: center; border-color: #FB9E09 !important; }
     </style>
 </head>
 <body onload="fetchIPs()">
@@ -105,9 +73,7 @@
         
         <!-- 訂單登記 -->
         <div id="page-add" class="page active">
-            <div class="header-wrapper">
-                <div class="header">訂單登記</div>
-            </div>
+            <div class="header-wrapper"><div class="header">訂單登記</div></div>
             <div class="card">
                 <label>IP分類</label>
                 <div class="ip-group" id="ip-buttons"><span style="font-size:12px; color:#C6AC8F;">載入中 ٩(๑˃̵ᴗ˂̵)و</span></div>
@@ -127,9 +93,7 @@
 
         <!-- 訂單查詢 -->
         <div id="page-search" class="page">
-            <div class="header-wrapper">
-                <div class="header">訂單查詢</div>
-            </div>
+            <div class="header-wrapper"><div class="header">訂單查詢</div></div>
             <div class="card">
                 <label>輸入團名或姓名</label>
                 <div style="display: flex; gap: 8px; align-items: center;">
@@ -144,9 +108,7 @@
 
         <!-- 下單紀錄 -->
         <div id="page-record" class="page">
-            <div class="header-wrapper">
-                <div class="header">下單紀錄</div>
-            </div>
+            <div class="header-wrapper"><div class="header">下單紀錄</div></div>
             <div class="card">
                 <div id="record-list"><div style="text-align:center; color:#C6AC8F;">載入最新紀錄中...</div></div>
             </div>
@@ -171,7 +133,6 @@
         </div>
     </div>
 
-    <!-- 底部導覽 -->
     <div class="bottom-nav">
         <div class="nav-item active" onclick="switchPage('add', this)"><span>訂單登記</span></div>
         <div class="nav-item" onclick="switchPage('search', this)"><span>訂單查詢</span></div>
@@ -183,7 +144,7 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbzEaZqaGT4HU2sWDUIiBLQ2TljlaW4YCeupcd_yVf0AlboFATxXSKpkwUwfUWbTuovGKA/exec";
         let ipList = []; let selectedIP = "多團"; let selectedSheetType = "線上"; let currentParsedData = null;
-        const payColorMap = { "中信": "#599D9C", "LPay": "#00B900", "現金": "#FDD55E", "無卡": "#ADC2D3", "LBank": "#1E77BD", "IPass": "#F09163" };
+        const payColorMap = { "中信": "#599D9C", "LPay": "#00B900", "現金": "#FDD55E", "無卡": "#ADC2D3", "LBank": "#1E77BD", "IPass": "#F09163", "未填": "#ADC2D3" };
         const statusOrder = { "已到貨": 1, "預購中": 2, "出貨完畢": 3 };
 
         async function fetchIPs() {
@@ -209,7 +170,7 @@
             });
         }
 
-        function setIP(val) { selectedIP = val; document.getElementById('other-ip-input').classList.add('hidden'); renderIPButtons(); }
+        function setIP(val) { selectedIP = val; renderIPButtons(); }
         function setSheetType(val, el) { selectedSheetType = val; document.querySelectorAll('.type-item').forEach(i => i.classList.remove('active')); el.classList.add('active'); }
 
         function switchPage(pageId, element) {
@@ -217,40 +178,27 @@
             document.getElementById('page-' + pageId).classList.add('active');
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             element.classList.add('active');
-            
-            // 切換頁面時自動觸發刷新
-            if (pageId === 'search') {
-                const kw = document.getElementById('quick-search-input').value;
-                if (kw) searchOrders();
-            } else if (pageId === 'record') {
-                fetchRecentRecords();
-            } else if (pageId === 'add') {
-                fetchIPs();
-            }
+            if (pageId === 'record') fetchRecentRecords();
         }
 
         async function searchOrders() {
             const keyword = document.getElementById('quick-search-input').value.trim();
             if (!keyword) return;
             const btn = document.getElementById('btn-search-exec');
-            const resultBox = document.getElementById('search-results');
             const list = document.getElementById('search-results-list');
-
             btn.disabled = true;
             list.innerHTML = `<div style="text-align:center; padding:20px; color:#C6AC8F;">搜尋中...</div>`;
-            resultBox.classList.remove('hidden');
-
+            document.getElementById('search-results').classList.remove('hidden');
             try {
                 const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "queryOrder", keyword: keyword }) });
                 const data = await response.json();
-                renderSearchResults(data, list, keyword);
+                renderSearchResults(data, list);
             } catch (e) { list.innerHTML = "搜尋失敗"; }
             finally { btn.disabled = false; }
         }
 
-        function renderSearchResults(data, list, keyword) {
+        function renderSearchResults(data, list) {
             if (!data || data.length === 0) { list.innerHTML = "找不到資料"; return; }
-            
             const statusGroups = {};
             data.forEach(item => {
                 const s = item.status || "未註記";
@@ -259,18 +207,17 @@
             });
 
             let html = `<div style="font-weight:bold; margin-bottom:10px; border-bottom:2px solid var(--accent); padding-bottom:5px;">搜尋結果 (${data.length} 筆)</div>`;
-            
             const sortedStatuses = [...new Set([...Object.keys(statusOrder), ...Object.keys(statusGroups)])];
+            
             sortedStatuses.forEach(status => {
                 if (!statusGroups[status]) return;
                 html += `<div class="status-header">${status}</div>`;
-                
                 const userGroups = {};
                 statusGroups[status].forEach(item => {
-                    const currentPay = item.payMethod || item.payment || item.pay || item['付款方式'] || "未填";
-                    const key = `${item.lineName}_${item.groupName}_${currentPay}`;
+                    const pay = item.payMethod || item.payment || item.pay || item['付款方式'] || "未填";
+                    const key = `${item.lineName}_${item.groupName}_${pay}_${item.rowIndex}`; // rowIndex用於精確更新
                     if (!userGroups[key]) {
-                        userGroups[key] = { name: item.lineName, group: item.groupName, pay: currentPay, deposit: item.deposit || 0, items: [], total: 0 };
+                        userGroups[key] = { name: item.lineName, group: item.groupName, pay: pay, deposit: item.deposit, items: [], total: 0, rowIndex: item.rowIndex };
                     }
                     userGroups[key].items.push(item);
                     userGroups[key].total += (parseInt(item.price) || 0);
@@ -279,15 +226,28 @@
                 for (let k in userGroups) {
                     const g = userGroups[k];
                     const tagColor = payColorMap[g.pay] || "#ADC2D3";
-                    html += `<div class="result-group">
+                    const isPayEmpty = g.pay === "未填";
+                    const isDepositEmpty = !g.deposit || g.deposit === "";
+
+                    html += `<div class="result-group" id="group-${g.rowIndex}">
                         <div class="user-header">
                             <div>
+                                <span class="result-tag ${isPayEmpty?'tag-clickable':''}" 
+                                      style="background:${tagColor}" 
+                                      onclick="${isPayEmpty ? `showPayOptions(${g.rowIndex}, '${g.name}')` : ''}">${g.pay}</span>
                                 <span class="link-text" onclick="quickTrigger('${g.name}')" style="font-weight:bold; color:var(--highlight);">${g.name}</span>
-                                <span class="result-tag" style="background:${tagColor}">${g.pay}</span>
-                                <span class="link-text" onclick="quickTrigger('${g.group}')" style="font-size:12px; color:#999;">${g.group}</span>
+                                <span style="font-size:11px; color:#999; margin-left:5px;">${g.group}</span>
                             </div>
-                            <div style="font-weight:bold">$${g.total} <span style="font-size:11px; color:#FB9E09;">(訂${g.deposit})</span></div>
+                            <div style="font-weight:bold; display:flex; align-items:center;">
+                                $${g.total} 
+                                <span style="font-size:11px; color:#FB9E09; margin-left:5px;">(訂:
+                                    ${isDepositEmpty ? 
+                                        `<input type="number" class="deposit-input" placeholder="0" onchange="updateField(${g.rowIndex}, 'deposit', this.value)">` : 
+                                        g.deposit}
+                                )</span>
+                            </div>
                         </div>
+                        <div id="pay-box-${g.rowIndex}" class="hidden"></div>
                         <div class="items-container">
                             ${g.items.map(i => `<div class="item-line"><span>${i.name}</span><span>$${i.price}</span></div>`).join('')}
                         </div>
@@ -295,6 +255,51 @@
                 }
             });
             list.innerHTML = html;
+        }
+
+        function showPayOptions(rowIndex, name) {
+            const box = document.getElementById(`pay-box-${rowIndex}`);
+            box.classList.toggle('hidden');
+            box.innerHTML = `
+                <div class="pay-selector">
+                    ${['中信', 'LBank', 'LPay', 'IPass', '無卡', '現金'].map(p => 
+                        `<button class="btn-small" onclick="selectPayMethod(${rowIndex}, '${p}')">${p}</button>`
+                    ).join('')}
+                </div>
+                <div id="bank-input-${rowIndex}" class="hidden" style="margin-top:5px;">
+                    <input type="text" placeholder="輸入後五碼" id="code-${rowIndex}" style="padding:8px; width:70%;">
+                    <button class="btn-small active" onclick="confirmBankPay(${rowIndex})">確認</button>
+                </div>
+            `;
+        }
+
+        function selectPayMethod(rowIndex, method) {
+            if (method === '中信' || method === 'LBank') {
+                document.getElementById(`bank-input-${rowIndex}`).classList.remove('hidden');
+                document.getElementById(`bank-input-${rowIndex}`).dataset.method = method;
+            } else {
+                updateField(rowIndex, 'payMethod', method);
+            }
+        }
+
+        function confirmBankPay(rowIndex) {
+            const method = document.getElementById(`bank-input-${rowIndex}`).dataset.method;
+            const code = document.getElementById(`code-${rowIndex}`).value;
+            if (!code) return alert("請輸入後五碼");
+            updateField(rowIndex, 'payMethod', `${method}(${code})`);
+        }
+
+        async function updateField(rowIndex, field, value) {
+            if (!value) return;
+            try {
+                // 這裡調用後端 GAS 的更新功能
+                await fetch(API_URL, { 
+                    method: "POST", 
+                    body: JSON.stringify({ action: "updateOrderField", rowIndex: rowIndex, field: field, value: value }) 
+                });
+                alert("更新成功！");
+                searchOrders(); // 刷新列表
+            } catch (e) { alert("更新失敗"); }
         }
 
         async function fetchRecentRecords() {
@@ -324,8 +329,8 @@
                     if (p) { products.push({ group: currentGroup, name: p[1].trim(), price: p[2] }); total += parseInt(p[2]); }
                 }
             }
-            currentParsedData = { customerName, products, total, type: selectedSheetType };
-            document.getElementById('confirm-content').innerHTML = `<b>顧客：${customerName}</b><br>項目：${products.length} 筆<br>總計：$${total}`;
+            currentParsedData = { customerName, products, total, type: selectedSheetType, ip: selectedIP };
+            document.getElementById('confirm-content').innerHTML = `<b>顧客：${customerName}</b><br>IP：${selectedIP}<br>項目：${products.length} 筆<br>總計：$${total}`;
             document.getElementById('confirm-modal').classList.remove('hidden');
         }
 
