@@ -237,7 +237,17 @@
                     const pay = item.payMethod || "未填";
                     const key = `${item.lineName}_${item.groupName}_${pay}_${item.rowIndex}`; 
                     if (!userGroups[key]) {
-                        userGroups[key] = { name: item.lineName, group: item.groupName, pay: pay, deposit: item.deposit, items: [], total: 0, rowIndex: item.rowIndex };
+                        // 儲存 sheetName 用於更新
+                        userGroups[key] = { 
+                            name: item.lineName, 
+                            group: item.groupName, 
+                            pay: pay, 
+                            deposit: item.deposit, 
+                            items: [], 
+                            total: 0, 
+                            rowIndex: item.rowIndex,
+                            sheetName: item.sheetName 
+                        };
                     }
                     userGroups[key].items.push(item);
                     userGroups[key].total += (parseInt(item.price) || 0);
@@ -246,10 +256,10 @@
                 for (let k in userGroups) {
                     const g = userGroups[k];
                     const tagColor = payColorMap[g.pay.split('(')[0]] || "#ADC2D3";
-                    const isPayEmpty = g.pay === "未填";
                     const isDepositEmpty = !g.deposit || g.deposit === "" || g.deposit === 0;
 
-                    html += `<div class="result-group" id="group-${g.rowIndex}">
+                    // 在 .result-group 加上 data-sheet 屬性
+                    html += `<div class="result-group" id="group-${g.rowIndex}" data-sheet="${g.sheetName}">
                         <div class="user-header">
                             <div>
                                 <span class="result-tag tag-clickable" id="pay-tag-${g.rowIndex}"
@@ -313,13 +323,24 @@
 
         async function updateField(rowIndex, field, value) {
             if (!value && value !== 0) return;
+            
+            // 關鍵修正：從 DOM 中抓取對應的工作表名稱
+            const groupEl = document.getElementById(`group-${rowIndex}`);
+            const sheetName = groupEl ? groupEl.getAttribute('data-sheet') : "線上";
+
             try {
                 const response = await fetch(API_URL, { 
                     method: "POST", 
-                    body: JSON.stringify({ action: "updateOrderField", rowIndex: rowIndex, field: field, value: value }) 
+                    body: JSON.stringify({ 
+                        action: "updateOrderField", 
+                        rowIndex: rowIndex, 
+                        field: field, 
+                        value: value,
+                        sheetName: sheetName 
+                    }) 
                 });
                 
-                // 局部更新 UI，不重新搜尋
+                // 局部更新 UI
                 if (field === 'payMethod') {
                     const tag = document.getElementById(`pay-tag-${rowIndex}`);
                     const cleanMethod = value.split('(')[0];
