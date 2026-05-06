@@ -139,11 +139,11 @@
     </div>
 
     <div class="bottom-nav">
-        <div class="nav-item active" onclick="switchPage('add', this)"><span>訂單登記</span></div>
-        <div class="nav-item" onclick="switchPage('search', this)"><span>訂單查詢</span></div>
-        <div class="nav-item" onclick="switchPage('record', this)"><span>下單紀錄</span></div>
-        <div class="nav-item" onclick="switchPage('inventory', this)"><span>庫存點名</span></div>
-        <div class="nav-item" onclick="switchPage('shipping', this)"><span>出貨區</span></div>
+        <div class="nav-item" id="nav-add" onclick="switchPage('add', this)"><span>訂單登記</span></div>
+        <div class="nav-item" id="nav-search" onclick="switchPage('search', this)"><span>訂單查詢</span></div>
+        <div class="nav-item" id="nav-record" onclick="switchPage('record', this)"><span>下單紀錄</span></div>
+        <div class="nav-item" id="nav-inventory" onclick="switchPage('inventory', this)"><span>庫存點名</span></div>
+        <div class="nav-item" id="nav-shipping" onclick="switchPage('shipping', this)"><span>出貨區</span></div>
     </div>
 
     <script>
@@ -153,6 +153,11 @@
         const statusOrder = { "已到貨": 1, "預購中": 2, "出貨完畢": 3 };
 
         function initApp() {
+            // 讀取最後一次開啟的頁面，若無則預設 'add'
+            const lastPage = localStorage.getItem('last_active_page') || 'add';
+            const lastNavEl = document.getElementById('nav-' + lastPage);
+            switchPage(lastPage, lastNavEl);
+
             const cachedIPs = localStorage.getItem('cached_ip_list');
             if (cachedIPs) {
                 ipList = JSON.parse(cachedIPs);
@@ -194,10 +199,18 @@
         function setSheetType(val, el) { selectedSheetType = val; document.querySelectorAll('.type-item').forEach(i => i.classList.remove('active')); el.classList.add('active'); }
 
         function switchPage(pageId, element) {
+            // 切換頁面顯示
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById('page-' + pageId).classList.add('active');
+            const targetPage = document.getElementById('page-' + pageId);
+            if (targetPage) targetPage.classList.add('active');
+
+            // 切換導覽列選取狀態
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-            element.classList.add('active');
+            if (element) element.classList.add('active');
+
+            // 儲存當前頁面到本地緩存
+            localStorage.setItem('last_active_page', pageId);
+
             if (pageId === 'record') fetchRecentRecords();
         }
 
@@ -235,9 +248,6 @@
                 const userGroups = {};
                 
                 statusGroups[status].forEach(item => {
-                    // 修正分組 Key 邏輯：
-                    // 使用 B 欄日期 (item.timestamp) 的前 10 個字元 (YYYY-MM-DD)
-                    // 確保同日、同人、同團的商品被縮成一組
                     const dateMark = (item.timestamp && item.timestamp.length >= 10) ? item.timestamp.substring(0, 10) : "no-date";
                     const key = `${item.lineName}_${item.groupName}_${dateMark}`; 
                     
