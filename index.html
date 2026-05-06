@@ -62,7 +62,6 @@
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(116, 81, 45, 0.4); z-index: 2000; display: flex; align-items: center; justify-content: center; }
         .confirm-card { background: white; width: 85%; max-width: 400px; border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         
-        /* 付款選擇樣式 */
         .pay-selector { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; padding: 10px; background: #fdfdfd; border: 1px dashed var(--accent); border-radius: 10px; }
         .deposit-input { width: 60px !important; padding: 4px !important; margin: 0 !important; font-size: 11px !important; text-align: center; border-color: #FB9E09 !important; }
 
@@ -71,7 +70,7 @@
         .type-item.active { background: var(--highlight); color: white; }
     </style>
 </head>
-<body onload="fetchIPs()">
+<body onload="initApp()">
 
     <div class="container">
         
@@ -81,7 +80,6 @@
             <div class="card">
                 <label>IP分類</label>
                 <div class="ip-group" id="ip-buttons">
-                    <!-- 預設顯示自動辨識按鈕 -->
                     <button class="btn-small active" onclick="setIP('多團')">自動辨識</button>
                 </div>
                 <input type="text" id="other-ip-input" class="hidden" placeholder="輸入IP名稱">
@@ -154,12 +152,23 @@
         const payColorMap = { "中信": "#599D9C", "LPay": "#00B900", "現金": "#FDD55E", "無卡": "#ADC2D3", "LBank": "#1E77BD", "IPass": "#F09163", "未填": "#ADC2D3" };
         const statusOrder = { "已到貨": 1, "預購中": 2, "出貨完畢": 3 };
 
+        // 啟動時先讀取快取
+        function initApp() {
+            const cachedIPs = localStorage.getItem('cached_ip_list');
+            if (cachedIPs) {
+                ipList = JSON.parse(cachedIPs);
+                renderIPButtons();
+            }
+            fetchIPs(); // 仍然進行網路請求，同步最新資料
+        }
+
         async function fetchIPs() {
             try {
                 const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "getIPs" }) });
                 const data = await response.json();
                 if (Array.isArray(data)) { 
                     ipList = data; 
+                    localStorage.setItem('cached_ip_list', JSON.stringify(data)); // 更新快取
                     renderIPButtons(); 
                 }
             } catch (e) { 
@@ -169,16 +178,14 @@
 
         function renderIPButtons() {
             const container = document.getElementById('ip-buttons');
-            container.innerHTML = ""; // 清空，重新繪製
+            container.innerHTML = "";
 
-            // 常駐「自動辨識」按鈕
             const autoBtn = document.createElement('button');
             autoBtn.className = 'btn-small' + (selectedIP === '多團' ? ' active' : '');
             autoBtn.innerText = "自動辨識"; 
             autoBtn.onclick = () => setIP('多團');
             container.appendChild(autoBtn);
 
-            // 根據試算表清單動態生成按鈕
             ipList.forEach(ip => {
                 const btn = document.createElement('button');
                 btn.className = 'btn-small' + (ip === selectedIP ? ' active' : '');
