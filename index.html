@@ -233,19 +233,22 @@
                 if (!statusGroups[status]) return;
                 html += `<div class="status-header">${status}</div>`;
                 const userGroups = {};
+                
                 statusGroups[status].forEach(item => {
-                    const pay = item.payMethod || "未填";
-                    const key = `${item.lineName}_${item.groupName}_${pay}_${item.rowIndex}`; 
+                    // 修改分組 Key：移除 rowIndex，改用時間標記 (timestamp) 組合
+                    // 這樣同時間下單、同人、同團的商品就會被縮成一組
+                    const timeMark = item.timestamp || "no-time";
+                    const key = `${item.lineName}_${item.groupName}_${timeMark}`; 
+                    
                     if (!userGroups[key]) {
-                        // 儲存 sheetName 用於更新
                         userGroups[key] = { 
                             name: item.lineName, 
                             group: item.groupName, 
-                            pay: pay, 
+                            pay: item.payMethod || "未填", 
                             deposit: item.deposit, 
                             items: [], 
                             total: 0, 
-                            rowIndex: item.rowIndex,
+                            rowIndex: item.rowIndex, // 鎖定這組的第一個 rowIndex
                             sheetName: item.sheetName 
                         };
                     }
@@ -258,7 +261,6 @@
                     const tagColor = payColorMap[g.pay.split('(')[0]] || "#ADC2D3";
                     const isDepositEmpty = !g.deposit || g.deposit === "" || g.deposit === 0;
 
-                    // 在 .result-group 加上 data-sheet 屬性
                     html += `<div class="result-group" id="group-${g.rowIndex}" data-sheet="${g.sheetName}">
                         <div class="user-header">
                             <div>
@@ -323,8 +325,6 @@
 
         async function updateField(rowIndex, field, value) {
             if (!value && value !== 0) return;
-            
-            // 關鍵修正：從 DOM 中抓取對應的工作表名稱
             const groupEl = document.getElementById(`group-${rowIndex}`);
             const sheetName = groupEl ? groupEl.getAttribute('data-sheet') : "線上";
 
@@ -340,7 +340,6 @@
                     }) 
                 });
                 
-                // 局部更新 UI
                 if (field === 'payMethod') {
                     const tag = document.getElementById(`pay-tag-${rowIndex}`);
                     const cleanMethod = value.split('(')[0];
@@ -350,7 +349,6 @@
                 } else if (field === 'deposit') {
                     document.getElementById(`deposit-display-${rowIndex}`).innerText = value;
                 }
-                
                 console.log("更新成功");
             } catch (e) { alert("更新失敗"); }
         }
