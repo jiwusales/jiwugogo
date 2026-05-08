@@ -63,7 +63,10 @@
         .confirm-card { background: white; width: 90%; max-width: 450px; border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-height: 85vh; overflow-y: auto; }
         
         .pay-selector { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; padding: 10px; background: #fdfdfd; border: 1px dashed var(--accent); border-radius: 10px; }
-        .deposit-input { width: 80px !important; padding: 5px !important; margin: 0 !important; font-size: 14px !important; text-align: center; border-color: #FB9E09 !important; height: 32px; }
+        
+        /* 移除訂金輸入框的箭頭 */
+        .deposit-input { width: 80px !important; padding: 5px !important; margin: 0 !important; font-size: 14px !important; text-align: center; border-color: #FB9E09 !important; height: 32px; appearance: textfield; -moz-appearance: textfield; }
+        .deposit-input::-webkit-outer-spin-button, .deposit-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
         .type-group { display: flex; gap: 10px; margin: 8px 0; }
         .type-item { flex: 1; padding: 10px; text-align: center; background: var(--accent); border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; }
@@ -132,8 +135,11 @@
             </div>
             
             <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
-                <label>付款方式</label>
-                <div id="modal-pay-display" class="result-tag" style="background:#ADC2D3; margin-bottom:10px;" onclick="toggleModalPay()">未填</div>
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <label style="margin:0;">付款方式</label>
+                    <div id="modal-pay-display" class="result-tag" style="background:#ADC2D3;" onclick="toggleModalPay()"> </div>
+                </div>
+                
                 <div id="modal-pay-selector" class="pay-selector hidden">
                     <!-- JS 生成按鈕 -->
                 </div>
@@ -244,7 +250,6 @@
                     if (p) { 
                         const name = p[1].trim();
                         const price = p[2];
-                        // 過濾掉名為「總金額」的項目
                         if (name.includes("總金額")) continue;
                         
                         products.push({ group: currentGroup, name: name, price: price }); 
@@ -253,10 +258,8 @@
                 }
             }
 
-            // 若來源為現貨，後端傳輸仍指向線上分頁
             const targetSheet = (selectedSheetType === '現貨') ? '線上' : selectedSheetType;
-
-            currentParsedData = { customerName, products, total, type: targetSheet, ip: selectedIP, deposit: "", payMethod: "未填" };
+            currentParsedData = { customerName, products, total, type: targetSheet, ip: selectedIP, deposit: "", payMethod: "" };
             
             let detailHtml = `
                 <div style="background:#f9f9f9; padding:10px; border-radius:10px; margin-bottom:10px;">
@@ -278,13 +281,13 @@
 
             detailHtml += `</div>
                 <div style="text-align:right; font-size:18px; font-weight:bold; margin-top:10px; color:var(--highlight);">
-                    總計：$${total}
+                    總金額：$${total}
                 </div>`;
 
             document.getElementById('confirm-content').innerHTML = detailHtml;
             document.getElementById('modal-deposit').value = "";
-            document.getElementById('modal-pay-display').innerText = "未填";
-            document.getElementById('modal-pay-display').style.background = "#ADC2D3";
+            document.getElementById('modal-pay-display').innerText = "";
+            document.getElementById('modal-pay-display').style.background = "transparent";
             document.getElementById('confirm-modal').classList.remove('hidden');
         }
 
@@ -366,7 +369,7 @@
                     const key = `${item.lineName}_${item.orderDate}`; 
                     if (!timeGroups[key]) {
                         timeGroups[key] = {
-                            name: item.lineName, pay: item.payMethod || "未填", deposit: item.deposit,
+                            name: item.lineName, pay: item.payMethod || "", deposit: item.deposit,
                             payDate: item.payDate, orderDate: item.orderDate, rowIndex: item.rowIndex,
                             sheetName: item.sheetName, groups: {} 
                         };
@@ -383,7 +386,7 @@
                         <div class="result-group" id="group-${tg.rowIndex}" data-sheet="${tg.sheetName}">
                             <div class="user-header">
                                 <div style="display:flex; align-items:center;">
-                                    <span class="result-tag" id="pay-tag-${tg.rowIndex}" style="background:${tagColor}" onclick="showPayOptions(${tg.rowIndex})">${tg.pay}</span>
+                                    <span class="result-tag" id="pay-tag-${tg.rowIndex}" style="background:${tg.pay ? tagColor : 'transparent'}" onclick="showPayOptions(${tg.rowIndex})">${tg.pay}</span>
                                     <span style="font-size:11px; font-weight:bold; margin:0 8px;">${tg.orderDate}</span>
                                     <span class="link-text" onclick="quickTrigger('${tg.name}')" style="font-weight:bold;">${tg.name}</span>
                                 </div>
