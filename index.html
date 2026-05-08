@@ -58,14 +58,14 @@
         
         .link-text { cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
         .hidden { display: none !important; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(116, 81, 45, 0.6); z-index: 2000; display: flex; align-items: center; justify-content: center; }
-        .confirm-card { background: white; width: 90%; max-width: 450px; border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-height: 85vh; overflow-y: auto; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0); z-index: 2000; display: flex; align-items: center; justify-content: center; }
+        .confirm-card { background: white; width: 90%; max-width: 450px; border-radius: 20px; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); max-height: 85vh; overflow-y: auto; border: 1px solid #eee; }
         
         .pay-selector-direct { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
         .pay-btn { border: none; border-radius: 12px; padding: 6px 12px; font-size: 12px; font-weight: bold; color: white; cursor: pointer; opacity: 0.6; transition: 0.3s; }
         .pay-btn.active { opacity: 1; transform: scale(1.05); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         
-        .deposit-input { width: 80px !important; padding: 5px !important; margin: 0 !important; font-size: 14px !important; text-align: center; border-color: #FB9E09 !important; height: 32px; appearance: textfield; }
+        .deposit-input { width: 100% !important; padding: 10px !important; margin: 5px 0 !important; font-size: 16px !important; border-color: var(--accent) !important; height: 40px; appearance: textfield; }
         .deposit-input::-webkit-outer-spin-button, .deposit-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
         .type-group { display: flex; gap: 10px; margin: 8px 0; }
@@ -133,14 +133,8 @@
             <div id="confirm-content"></div>
             
             <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
-                    <label style="margin:0;">付款方式</label>
-                </div>
-                
-                <!-- 直接顯示的標籤選擇器 -->
-                <div id="modal-pay-selector" class="pay-selector-direct">
-                    <!-- JS 生成按鈕 -->
-                </div>
+                <label style="margin:0;">付款方式</label>
+                <div id="modal-pay-selector" class="pay-selector-direct"></div>
 
                 <div id="modal-bank-input" class="hidden" style="margin-top:10px; background: #fdfdfd; padding: 10px; border-radius: 10px; border: 1px dashed var(--accent);">
                     <div style="font-size: 12px; margin-bottom: 5px; color: var(--highlight);" id="bank-input-label"></div>
@@ -150,9 +144,9 @@
                     </div>
                 </div>
 
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
-                    <label style="margin:0;">訂金金額</label>
-                    <input type="number" id="modal-deposit" class="deposit-input" placeholder="0">
+                <div style="margin-top: 15px;">
+                    <label style="margin:0;">訂金</label>
+                    <input type="number" id="modal-deposit" class="deposit-input" placeholder="請輸入金額">
                 </div>
             </div>
 
@@ -247,7 +241,7 @@
 
             currentParsedData = { customerName, products, total, type: (selectedSheetType === '現貨' ? '線上' : selectedSheetType), ip: selectedIP, deposit: "", payMethod: "" };
             
-            let detailHtml = `<div style="background:#f9f9f9; padding:10px; border-radius:10px; margin-bottom:10px; font-size:13px;"><b>顧客：</b>${customerName}<br><b>來源：</b>${selectedSheetType} / ${selectedIP}</div><div class="items-container" style="border:none; margin:0; padding:0;">`;
+            let detailHtml = `<div style="background:#f9f9f9; padding:10px; border-radius:10px; margin-bottom:10px; font-size:13px;"><b>顧客：</b>${customerName}<br><b>來源：</b>${selectedSheetType}</div><div class="items-container" style="border:none; margin:0; padding:0;">`;
             products.forEach(item => {
                 detailHtml += `<div class="item-line"><div style="flex:1;"><div style="font-weight:bold;">${item.name}</div><div style="font-size:11px; color:#999;">${item.group}</div></div><div style="font-weight:bold;">$${item.price}</div></div>`;
             });
@@ -267,7 +261,7 @@
             if (method === '中信' || method === 'LBank') {
                 const bankInput = document.getElementById('modal-bank-input');
                 bankInput.classList.remove('hidden');
-                document.getElementById('bank-input-label').innerText = `請輸入 ${method} 後五碼：`;
+                document.getElementById('bank-input-label').innerText = `匯款後五碼：`;
                 bankInput.dataset.method = method;
             } else {
                 updateModalPayDisplay(method);
@@ -292,8 +286,9 @@
 
         async function finalSubmit() {
             const btn = document.getElementById('btn-final-submit');
-            btn.disabled = true; btn.innerText = "提交中...";
-            currentParsedData.deposit = document.getElementById('modal-deposit').value;
+            if (!currentParsedData.payMethod) { alert("請選擇付款方式"); return; }
+            btn.disabled = true; btn.innerText = "傳送中...";
+            currentParsedData.deposit = document.getElementById('modal-deposit').value || "0";
             try {
                 await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "addOrder", data: currentParsedData }) });
                 alert("登記成功！"); document.getElementById('quick-input').value = ""; closeModal();
@@ -318,28 +313,39 @@
             if (!data || data.length === 0) { list.innerHTML = "找不到資料"; return; }
             let html = `<div style="font-weight:bold; margin-bottom:10px; border-bottom:2px solid var(--accent); padding-bottom:5px;">${keyword} 的訂單 (${data.length} 筆)</div>`;
             const timeGroups = {};
+            
             data.forEach(item => {
                 const key = `${item.lineName}_${item.orderDate}`; 
                 if (!timeGroups[key]) timeGroups[key] = { name: item.lineName, pay: item.payMethod || "", deposit: item.deposit, orderDate: item.orderDate, rowIndex: item.rowIndex, sheetName: item.sheetName, groups: {} };
                 if (!timeGroups[key].groups[item.groupName]) timeGroups[key].groups[item.groupName] = [];
                 timeGroups[key].groups[item.groupName].push(item);
             });
+
             for (let k in timeGroups) {
                 const tg = timeGroups[k];
                 const tagColor = payColorMap[tg.pay.split('(')[0]] || "#ADC2D3";
                 let subTotal = 0;
                 for (let gName in tg.groups) tg.groups[gName].forEach(i => subTotal += (parseInt(i.price) || 0));
+                
+                // 邏輯：如果搜尋的是姓名，則不顯示姓名標籤；如果是團名，則不顯示團名標籤
+                const isSearchingName = (tg.name === keyword);
+
                 html += `<div class="result-group" id="group-${tg.rowIndex}" data-sheet="${tg.sheetName}">
                     <div class="user-header">
                         <div style="display:flex; align-items:center;">
                             <span class="result-tag" style="background:${tagColor}">${tg.pay || '未填'}</span>
                             <span style="font-size:11px; font-weight:bold; margin:0 8px;">${tg.orderDate}</span>
-                            <span class="link-text" onclick="quickTrigger('${tg.name}')" style="font-weight:bold;">${tg.name}</span>
+                            ${isSearchingName ? '' : `<span class="link-text" onclick="quickTrigger('${tg.name}')" style="font-weight:bold;">${tg.name}</span>`}
                         </div>
                         <div style="font-weight:bold;">$${subTotal} <span style="font-size:11px; color:#FB9E09;">(訂:${tg.deposit||0})</span></div>
                     </div><div class="items-container">`;
+                
                 for (let gName in tg.groups) {
-                    html += `<span class="group-title">${gName}</span>` + tg.groups[gName].map(i => `<div class="item-line" style="margin:2px 0;"><span>${i.name}</span><span>$${i.price}</span></div>`).join('');
+                    const isSearchingGroup = (gName === keyword);
+                    if (!isSearchingGroup) {
+                        html += `<span class="group-title" onclick="quickTrigger('${gName}')">${gName}</span>`;
+                    }
+                    html += tg.groups[gName].map(i => `<div class="item-line" style="margin:2px 0;"><span>${i.name}</span><span>$${i.price}</span></div>`).join('');
                 }
                 html += `</div></div>`;
             }
