@@ -240,7 +240,7 @@
             if (isSearchingName) {
                 html = `<div style="font-weight:bold; margin-bottom:10px; border-bottom:2px solid var(--accent); padding-bottom:5px;">${keyword} 購買清單 (${data.length} 筆)</div>`;
             } else {
-                html = `<div style="font-weight:bold; margin-bottom:10px; border-bottom:2px solid var(--accent); padding-bottom:5px;">${keyword} 跟團人數清單(${data.length} 筆)</div>`;
+                html = `<div style="font-weight:bold; margin-bottom:10px; border-bottom:2px solid var(--accent); padding-bottom:5px;">${keyword} 跟團清單(${data.length} 筆)</div>`;
             }
 
             const sortedStatuses = [...new Set([...Object.keys(statusOrder), ...Object.keys(statusGroups)])];
@@ -276,10 +276,15 @@
                     const tagColor = payColorMap[tg.pay.split('(')[0]] || "#ADC2D3";
                     const isDepositEmpty = !tg.deposit || tg.deposit === "" || tg.deposit === 0;
 
-                    const formatDate = (dateStr) => {
-                        if (!dateStr || dateStr.trim() === "") return "";
-                        const d = new Date(dateStr);
-                        return isNaN(d.getTime()) ? "" : `${d.getMonth() + 1}/${d.getDate()}`;
+                    const formatDate = (val) => {
+                        if (!val) return "";
+                        let d = new Date(val);
+                        // 如果 Date 物件無效，嘗試直接提取數字 (適用於 2024/05/10 這種字串)
+                        if (isNaN(d.getTime())) {
+                            const match = String(val).match(/(\d+)\/(\d+)/);
+                            return match ? `${match[1]}/${match[2]}` : String(val);
+                        }
+                        return `${d.getMonth() + 1}/${d.getDate()}`;
                     };
 
                     const oDate = formatDate(tg.orderDate);
