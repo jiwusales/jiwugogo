@@ -89,6 +89,7 @@
                 <div class="type-group">
                     <div class="type-item active" onclick="setSheetType('線上', this)">線上</div>
                     <div class="type-item" onclick="setSheetType('開團', this)">開團</div>
+                    <div class="type-item" onclick="setSheetType('現貨', this)">現貨</div>
                 </div>
 
                 <label>快速輸入 (姓名 + 訂單內容)</label>
@@ -97,7 +98,6 @@
             </div>
         </div>
 
-        <!-- 訂單查詢、下單紀錄、庫存、出貨區（維持原樣，不省略任何語法） -->
         <div id="page-search" class="page">
             <div class="header-wrapper"><div class="header">訂單查詢</div></div>
             <div class="card">
@@ -123,29 +123,28 @@
         <div id="page-shipping" class="page"><div class="header-wrapper"><div class="header">出貨狀態</div></div><div class="card">功能開發中...</div></div>
     </div>
 
-    <!-- 內容確認視窗 (修改重點) -->
+    <!-- 內容確認視窗 -->
     <div id="confirm-modal" class="modal-overlay hidden">
         <div class="confirm-card">
             <div class="header" style="margin: 0 0 10px 0; text-align: center;">確認訂單內容</div>
             <div id="confirm-content">
-                <!-- 這裡由 JS 動態生成 -->
+                <!-- 由 JS 生成 -->
             </div>
             
             <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <label style="margin:0;">訂金金額</label>
-                    <input type="number" id="modal-deposit" class="deposit-input" placeholder="0">
-                </div>
                 <label>付款方式</label>
                 <div id="modal-pay-display" class="result-tag" style="background:#ADC2D3; margin-bottom:10px;" onclick="toggleModalPay()">未填</div>
                 <div id="modal-pay-selector" class="pay-selector hidden">
-                    ${['中信', 'LBank', 'LPay', 'IPass', '無卡', '現金'].map(p => 
-                        `<button class="btn-small" onclick="selectModalPay('${p}')">${p}</button>`
-                    ).join('')}
+                    <!-- JS 生成按鈕 -->
                 </div>
                 <div id="modal-bank-input" class="hidden" style="margin-top:5px;">
                     <input type="text" placeholder="輸入後五碼" id="modal-code" style="padding:8px; width:60%; font-size:14px;">
                     <button class="btn-small active" onclick="confirmModalBank()">確認</button>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                    <label style="margin:0;">訂金金額</label>
+                    <input type="number" id="modal-deposit" class="deposit-input" placeholder="0">
                 </div>
             </div>
 
@@ -169,6 +168,7 @@
         let ipList = []; let selectedIP = "多團"; let selectedSheetType = "線上"; let currentParsedData = null;
         const payColorMap = { "中信": "#599D9C", "LPay": "#00B900", "現金": "#FDD55E", "無卡": "#ADC2D3", "LBank": "#1E77BD", "IPass": "#F09163", "未填": "#ADC2D3" };
         const statusOrder = { "已到貨": 1, "預購中": 2, "出貨完畢": 3 };
+        const paymentOptions = ['中信', 'LBank', 'LPay', 'IPass', '無卡', '現金'];
 
         function initApp() {
             const lastPage = localStorage.getItem('last_active_page') || 'add';
@@ -177,6 +177,7 @@
             const cachedIPs = localStorage.getItem('cached_ip_list');
             if (cachedIPs) { ipList = JSON.parse(cachedIPs); renderIPButtons(); }
             fetchIPs();
+            renderModalPaySelector();
         }
 
         async function fetchIPs() {
@@ -202,8 +203,19 @@
             });
         }
 
+        function renderModalPaySelector() {
+            const container = document.getElementById('modal-pay-selector');
+            container.innerHTML = paymentOptions.map(p => 
+                `<button class="btn-small" onclick="selectModalPay('${p}')">${p}</button>`
+            ).join('');
+        }
+
         function setIP(val) { selectedIP = val; renderIPButtons(); }
-        function setSheetType(val, el) { selectedSheetType = val; document.querySelectorAll('.type-item').forEach(i => i.classList.remove('active')); el.classList.add('active'); }
+        function setSheetType(val, el) { 
+            selectedSheetType = val; 
+            document.querySelectorAll('.type-item').forEach(i => i.classList.remove('active')); 
+            el.classList.add('active'); 
+        }
 
         function switchPage(pageId, element) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -232,15 +244,20 @@
                     if (p) { 
                         const name = p[1].trim();
                         const price = p[2];
+                        // 過濾掉名為「總金額」的項目
+                        if (name.includes("總金額")) continue;
+                        
                         products.push({ group: currentGroup, name: name, price: price }); 
                         total += parseInt(price); 
                     }
                 }
             }
 
-            currentParsedData = { customerName, products, total, type: selectedSheetType, ip: selectedIP, deposit: "", payMethod: "未填" };
+            // 若來源為現貨，後端傳輸仍指向線上分頁
+            const targetSheet = (selectedSheetType === '現貨') ? '線上' : selectedSheetType;
+
+            currentParsedData = { customerName, products, total, type: targetSheet, ip: selectedIP, deposit: "", payMethod: "未填" };
             
-            // 生成明細 HTML
             let detailHtml = `
                 <div style="background:#f9f9f9; padding:10px; border-radius:10px; margin-bottom:10px;">
                     <b>顧客：</b>${customerName}<br>
@@ -249,10 +266,8 @@
                 <div class="items-container" style="border:none; margin:0; padding:0;">`;
             
             products.forEach(item => {
-                const imgSrc = `https://jiwusales.github.io/img/${item.name}.jpg`; // 假設圖片路徑
                 detailHtml += `
                     <div class="item-line">
-                        <img src="${imgSrc}" class="item-img" onerror="this.src='https://placehold.co/100x100?text=No+Img'">
                         <div style="flex:1;">
                             <div style="font-weight:bold;">${item.name}</div>
                             <div style="font-size:11px; color:#999;">${item.group}</div>
@@ -273,7 +288,6 @@
             document.getElementById('confirm-modal').classList.remove('hidden');
         }
 
-        // Modal 內的付款方式處理
         function toggleModalPay() { document.getElementById('modal-pay-selector').classList.toggle('hidden'); }
         function selectModalPay(method) {
             if (method === '中信' || method === 'LBank') {
@@ -290,6 +304,7 @@
             if (!code) return alert("輸入後五碼");
             updateModalPayDisplay(`${method}(${code})`);
             document.getElementById('modal-bank-input').classList.add('hidden');
+            document.getElementById('modal-code').value = "";
         }
         function updateModalPayDisplay(val) {
             const display = document.getElementById('modal-pay-display');
@@ -306,11 +321,9 @@
             const btn = document.getElementById('btn-final-submit');
             btn.disabled = true; btn.innerText = "提交中...";
             
-            // 抓取最後輸入的訂金與付款方式
             currentParsedData.deposit = document.getElementById('modal-deposit').value;
             
             try {
-                // 將內容傳送到後端 addOrder，後端需處理這些欄位寫入
                 await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "addOrder", data: currentParsedData }) });
                 alert("登記成功！"); 
                 document.getElementById('quick-input').value = ""; 
@@ -319,7 +332,6 @@
             finally { btn.disabled = false; btn.innerText = "確認並輸入試算表"; }
         }
 
-        // --- 搜尋與紀錄邏輯 (完整保留) ---
         async function searchOrders() {
             const keyword = document.getElementById('quick-search-input').value.trim();
             if (!keyword) return;
@@ -338,7 +350,6 @@
 
         function renderSearchResults(data, list, keyword) {
             if (!data || data.length === 0) { list.innerHTML = "找不到資料"; return; }
-            const isSearchingName = data.some(i => i.lineName === keyword);
             const statusGroups = {};
             data.forEach(item => {
                 const s = item.status || "未註記";
@@ -395,7 +406,7 @@
             box.classList.toggle('hidden');
             box.innerHTML = `
                 <div class="pay-selector">
-                    ${['中信', 'LBank', 'LPay', 'IPass', '無卡', '現金'].map(p => 
+                    ${paymentOptions.map(p => 
                         `<button class="btn-small" onclick="selectPayMethod(${rowIndex}, '${p}')">${p}</button>`
                     ).join('')}
                 </div>
