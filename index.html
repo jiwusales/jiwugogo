@@ -228,9 +228,7 @@
         function renderSearchResults(data, list, keyword) {
             if (!data || data.length === 0) { list.innerHTML = "找不到資料"; return; }
             
-            // 判斷是否搜尋姓名
             const isSearchingName = data.some(i => i.lineName === keyword);
-            
             const statusGroups = {};
             data.forEach(item => {
                 const s = item.status || "未註記";
@@ -240,10 +238,8 @@
 
             let html = "";
             if (isSearchingName) {
-                // 1. 顧客名搜尋結果前面的人名不用加「」
                 html = `<div style="font-weight:bold; margin-bottom:10px; border-bottom:2px solid var(--accent); padding-bottom:5px;">${keyword} 購買清單 (${data.length} 筆)</div>`;
             } else {
-                // 2. 搜尋結果修改成：團名 跟團人數清單(xx 筆)
                 html = `<div style="font-weight:bold; margin-bottom:10px; border-bottom:2px solid var(--accent); padding-bottom:5px;">${keyword} 跟團人數清單(${data.length} 筆)</div>`;
             }
 
@@ -262,12 +258,13 @@
                             pay: item.payMethod || "未填",
                             deposit: item.deposit,
                             timestamp: item.timestamp,
+                            payDate: item.payDate,
+                            orderDate: item.orderDate,
                             rowIndex: item.rowIndex,
                             sheetName: item.sheetName,
                             groups: {} 
                         };
                     }
-                    
                     if (!timeGroups[key].groups[item.groupName]) {
                         timeGroups[key].groups[item.groupName] = [];
                     }
@@ -278,6 +275,15 @@
                     const tg = timeGroups[k];
                     const tagColor = payColorMap[tg.pay.split('(')[0]] || "#ADC2D3";
                     const isDepositEmpty = !tg.deposit || tg.deposit === "" || tg.deposit === 0;
+
+                    const formatDate = (dateStr) => {
+                        if (!dateStr || dateStr.trim() === "") return "";
+                        const d = new Date(dateStr);
+                        return isNaN(d.getTime()) ? "" : `${d.getMonth() + 1}/${d.getDate()}`;
+                    };
+
+                    const oDate = formatDate(tg.orderDate);
+                    const pDate = formatDate(tg.payDate);
                     
                     let subTotal = 0;
                     for (let gName in tg.groups) {
@@ -286,10 +292,15 @@
 
                     html += `<div class="result-group" id="group-${tg.rowIndex}" data-sheet="${tg.sheetName}">
                         <div class="user-header">
-                            <div>
+                            <div style="display: flex; align-items: center;">
                                 <span class="result-tag tag-clickable" id="pay-tag-${tg.rowIndex}"
                                       style="background:${tagColor}" 
                                       onclick="showPayOptions(${tg.rowIndex}, '${tg.name}')">${tg.pay}</span>
+                                <span style="font-size: 11px; font-weight: bold; margin-right: 8px;">
+                                    ${oDate ? `<span style="color:#56453E">${oDate}</span>` : ''}
+                                    ${(oDate && pDate) ? '｜' : ''}
+                                    ${pDate ? `<span style="color:#E24C60">${pDate}</span>` : ''}
+                                </span>
                                 ${!isSearchingName ? `<span class="link-text" onclick="quickTrigger('${tg.name}')" style="font-weight:bold; color:var(--highlight);">${tg.name}</span>` : ''}
                             </div>
                             <div style="font-weight:bold; display:flex; align-items:center;">
@@ -307,17 +318,13 @@
                         <div class="items-container">`;
                     
                     for (let gName in tg.groups) {
-                        // 3. 如果是用團名搜尋，團名標題不用出現，直接列出商品即可
                         if (isSearchingName || gName !== keyword) {
                              html += `<span class="group-title" onclick="quickTrigger('${gName}')">${gName}</span>`;
                         }
-                        
                         tg.groups[gName].forEach(i => {
-                            // 4. 商品名稱前面不用加「｜」
                             html += `<div class="item-line"><span>${i.name}</span><span>$${i.price}</span></div>`;
                         });
                     }
-                    
                     html += `</div></div>`;
                 }
             });
@@ -330,8 +337,8 @@
             box.innerHTML = `
                 <div class="pay-selector">
                     ${['中信', 'LBank', 'LPay', 'IPass', '無卡', '現金'].map(p => 
-                        `<button class="btn-small" onclick="selectPayMethod(${rowIndex}, '${p}')">${p}</button>`
-                    ).join('')}
+                        `<button class="btn-small" onclick="selectPayMethod(${rowIndex}, '${p}')">${p}</button>
+                    `).join('')}
                 </div>
                 <div id="bank-input-${rowIndex}" class="hidden" style="margin-top:5px;">
                     <input type="text" placeholder="輸入後五碼" id="code-${rowIndex}" style="padding:8px; width:60%;">
