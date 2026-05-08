@@ -51,7 +51,6 @@
         .result-group { border-bottom: 1px solid #eee; padding: 15px 0; position: relative; }
         .items-container { border-left: 2px solid var(--accent); margin-left: 5px; padding-left: 10px; margin-top: 10px;}
         .item-line { display: flex; align-items: center; justify-content: space-between; font-size: 13px; margin: 10px 0; gap: 10px; }
-        .item-img { width: 45px; height: 45px; border-radius: 8px; object-fit: cover; background: #eee; flex-shrink: 0; }
         
         .user-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .result-tag { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; color: white; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -62,10 +61,12 @@
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(116, 81, 45, 0.6); z-index: 2000; display: flex; align-items: center; justify-content: center; }
         .confirm-card { background: white; width: 90%; max-width: 450px; border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-height: 85vh; overflow-y: auto; }
         
-        .pay-selector { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; padding: 10px; background: #fdfdfd; border: 1px dashed var(--accent); border-radius: 10px; }
+        /* 付款選擇器樣式優化 */
+        .pay-selector-direct { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .pay-btn { border: none; border-radius: 12px; padding: 6px 12px; font-size: 12px; font-weight: bold; color: white; cursor: pointer; opacity: 0.6; transition: 0.3s; }
+        .pay-btn.active { opacity: 1; transform: scale(1.05); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         
-        /* 移除訂金輸入框的箭頭 */
-        .deposit-input { width: 80px !important; padding: 5px !important; margin: 0 !important; font-size: 14px !important; text-align: center; border-color: #FB9E09 !important; height: 32px; appearance: textfield; -moz-appearance: textfield; }
+        .deposit-input { width: 80px !important; padding: 5px !important; margin: 0 !important; font-size: 14px !important; text-align: center; border-color: #FB9E09 !important; height: 32px; appearance: textfield; }
         .deposit-input::-webkit-outer-spin-button, .deposit-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
         .type-group { display: flex; gap: 10px; margin: 8px 0; }
@@ -130,25 +131,28 @@
     <div id="confirm-modal" class="modal-overlay hidden">
         <div class="confirm-card">
             <div class="header" style="margin: 0 0 10px 0; text-align: center;">確認訂單內容</div>
-            <div id="confirm-content">
-                <!-- 由 JS 生成 -->
-            </div>
+            <div id="confirm-content"></div>
             
             <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
                     <label style="margin:0;">付款方式</label>
-                    <div id="modal-pay-display" class="result-tag" style="background:#ADC2D3;" onclick="toggleModalPay()"> </div>
+                    <div id="modal-pay-display" class="result-tag" style="background:transparent; color: var(--text); border: 1px solid var(--accent); display:none;"></div>
                 </div>
                 
-                <div id="modal-pay-selector" class="pay-selector hidden">
+                <!-- 直接顯示的標籤選擇器 -->
+                <div id="modal-pay-selector" class="pay-selector-direct">
                     <!-- JS 生成按鈕 -->
                 </div>
-                <div id="modal-bank-input" class="hidden" style="margin-top:5px;">
-                    <input type="text" placeholder="輸入後五碼" id="modal-code" style="padding:8px; width:60%; font-size:14px;">
-                    <button class="btn-small active" onclick="confirmModalBank()">確認</button>
+
+                <div id="modal-bank-input" class="hidden" style="margin-top:10px; background: #fdfdfd; padding: 10px; border-radius: 10px; border: 1px dashed var(--accent);">
+                    <div style="font-size: 12px; margin-bottom: 5px; color: var(--highlight);" id="bank-input-label"></div>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" placeholder="輸入後五碼" id="modal-code" style="padding:8px; margin:0; flex: 1; font-size:14px;">
+                        <button class="btn-small active" onclick="confirmModalBank()" style="margin:0; padding: 0 15px;">確認</button>
+                    </div>
                 </div>
 
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
                     <label style="margin:0;">訂金金額</label>
                     <input type="number" id="modal-deposit" class="deposit-input" placeholder="0">
                 </div>
@@ -156,7 +160,7 @@
 
             <div style="margin-top: 20px; display: flex; gap: 10px;">
                 <button class="btn" style="background: #EDE0D4; color: var(--text); flex: 1;" onclick="closeModal()">取消</button>
-                <button class="btn" style="flex: 2; background: var(--highlight);" id="btn-final-submit" onclick="finalSubmit()">確認並輸入試算表</button>
+                <button class="btn" style="flex: 2; background: var(--highlight);" id="btn-final-submit" onclick="finalSubmit()">確認並寫入</button>
             </div>
         </div>
     </div>
@@ -172,16 +176,12 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbzEaZqaGT4HU2sWDUIiBLQ2TljlaW4YCeupcd_yVf0AlboFATxXSKpkwUwfUWbTuovGKA/exec";
         let ipList = []; let selectedIP = "多團"; let selectedSheetType = "線上"; let currentParsedData = null;
-        const payColorMap = { "中信": "#599D9C", "LPay": "#00B900", "現金": "#FDD55E", "無卡": "#ADC2D3", "LBank": "#1E77BD", "IPass": "#F09163", "未填": "#ADC2D3" };
-        const statusOrder = { "已到貨": 1, "預購中": 2, "出貨完畢": 3 };
+        const payColorMap = { "中信": "#599D9C", "LPay": "#00B900", "現金": "#FDD55E", "無卡": "#ADC2D3", "LBank": "#1E77BD", "IPass": "#F09163" };
         const paymentOptions = ['中信', 'LBank', 'LPay', 'IPass', '無卡', '現金'];
 
         function initApp() {
             const lastPage = localStorage.getItem('last_active_page') || 'add';
-            const lastNavEl = document.getElementById('nav-' + lastPage);
-            switchPage(lastPage, lastNavEl);
-            const cachedIPs = localStorage.getItem('cached_ip_list');
-            if (cachedIPs) { ipList = JSON.parse(cachedIPs); renderIPButtons(); }
+            switchPage(lastPage, document.getElementById('nav-' + lastPage));
             fetchIPs();
             renderModalPaySelector();
         }
@@ -190,29 +190,20 @@
             try {
                 const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "getIPs" }) });
                 const data = await response.json();
-                if (Array.isArray(data)) { ipList = data; localStorage.setItem('cached_ip_list', JSON.stringify(data)); renderIPButtons(); }
+                if (Array.isArray(data)) { ipList = data; renderIPButtons(); }
             } catch (e) { console.error(e); }
         }
 
         function renderIPButtons() {
             const container = document.getElementById('ip-buttons');
-            container.innerHTML = "";
-            const autoBtn = document.createElement('button');
-            autoBtn.className = 'btn-small' + (selectedIP === '多團' ? ' active' : '');
-            autoBtn.innerText = "自動辨識"; autoBtn.onclick = () => setIP('多團');
-            container.appendChild(autoBtn);
-            ipList.forEach(ip => {
-                const btn = document.createElement('button');
-                btn.className = 'btn-small' + (ip === selectedIP ? ' active' : '');
-                btn.innerText = ip; btn.onclick = () => setIP(ip);
-                container.appendChild(btn);
-            });
+            container.innerHTML = `<button class="btn-small ${selectedIP === '多團' ? 'active' : ''}" onclick="setIP('多團')">自動辨識</button>` + 
+                ipList.map(ip => `<button class="btn-small ${ip === selectedIP ? 'active' : ''}" onclick="setIP('${ip}')">${ip}</button>`).join('');
         }
 
         function renderModalPaySelector() {
             const container = document.getElementById('modal-pay-selector');
             container.innerHTML = paymentOptions.map(p => 
-                `<button class="btn-small" onclick="selectModalPay('${p}')">${p}</button>`
+                `<button class="pay-btn" id="modal-pay-${p}" style="background-color: ${payColorMap[p]}" onclick="selectModalPay('${p}')">${p}</button>`
             ).join('');
         }
 
@@ -225,8 +216,7 @@
 
         function switchPage(pageId, element) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            const targetPage = document.getElementById('page-' + pageId);
-            if (targetPage) targetPage.classList.add('active');
+            document.getElementById('page-' + pageId).classList.add('active');
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             if (element) element.classList.add('active');
             localStorage.setItem('last_active_page', pageId);
@@ -251,70 +241,59 @@
                         const name = p[1].trim();
                         const price = p[2];
                         if (name.includes("總金額")) continue;
-                        
                         products.push({ group: currentGroup, name: name, price: price }); 
                         total += parseInt(price); 
                     }
                 }
             }
 
-            const targetSheet = (selectedSheetType === '現貨') ? '線上' : selectedSheetType;
-            currentParsedData = { customerName, products, total, type: targetSheet, ip: selectedIP, deposit: "", payMethod: "" };
+            currentParsedData = { customerName, products, total, type: (selectedSheetType === '現貨' ? '線上' : selectedSheetType), ip: selectedIP, deposit: "", payMethod: "" };
             
-            let detailHtml = `
-                <div style="background:#f9f9f9; padding:10px; border-radius:10px; margin-bottom:10px;">
-                    <b>顧客：</b>${customerName}<br>
-                    <b>來源：</b>${selectedSheetType} / ${selectedIP}
-                </div>
-                <div class="items-container" style="border:none; margin:0; padding:0;">`;
-            
+            let detailHtml = `<div style="background:#f9f9f9; padding:10px; border-radius:10px; margin-bottom:10px; font-size:13px;"><b>顧客：</b>${customerName}<br><b>來源：</b>${selectedSheetType} / ${selectedIP}</div><div class="items-container" style="border:none; margin:0; padding:0;">`;
             products.forEach(item => {
-                detailHtml += `
-                    <div class="item-line">
-                        <div style="flex:1;">
-                            <div style="font-weight:bold;">${item.name}</div>
-                            <div style="font-size:11px; color:#999;">${item.group}</div>
-                        </div>
-                        <div style="font-weight:bold;">$${item.price}</div>
-                    </div>`;
+                detailHtml += `<div class="item-line"><div style="flex:1;"><div style="font-weight:bold;">${item.name}</div><div style="font-size:11px; color:#999;">${item.group}</div></div><div style="font-weight:bold;">$${item.price}</div></div>`;
             });
-
-            detailHtml += `</div>
-                <div style="text-align:right; font-size:18px; font-weight:bold; margin-top:10px; color:var(--highlight);">
-                    總金額：$${total}
-                </div>`;
+            detailHtml += `</div><div style="text-align:right; font-size:18px; font-weight:bold; margin-top:10px; color:var(--highlight);">總金額：$${total}</div>`;
 
             document.getElementById('confirm-content').innerHTML = detailHtml;
             document.getElementById('modal-deposit').value = "";
             document.getElementById('modal-pay-display').innerText = "";
-            document.getElementById('modal-pay-display').style.background = "transparent";
+            document.getElementById('modal-pay-display').style.display = "none";
+            document.getElementById('modal-bank-input').classList.add('hidden');
+            document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('confirm-modal').classList.remove('hidden');
         }
 
-        function toggleModalPay() { document.getElementById('modal-pay-selector').classList.toggle('hidden'); }
         function selectModalPay(method) {
+            document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`modal-pay-${method}`).classList.add('active');
+
             if (method === '中信' || method === 'LBank') {
                 const bankInput = document.getElementById('modal-bank-input');
                 bankInput.classList.remove('hidden');
+                document.getElementById('bank-input-label').innerText = `請輸入 ${method} 後五碼：`;
                 bankInput.dataset.method = method;
             } else {
                 updateModalPayDisplay(method);
+                document.getElementById('modal-bank-input').classList.add('hidden');
             }
         }
+
         function confirmModalBank() {
             const method = document.getElementById('modal-bank-input').dataset.method;
             const code = document.getElementById('modal-code').value;
-            if (!code) return alert("輸入後五碼");
+            if (!code) return alert("請輸入後五碼");
             updateModalPayDisplay(`${method}(${code})`);
             document.getElementById('modal-bank-input').classList.add('hidden');
             document.getElementById('modal-code').value = "";
         }
+
         function updateModalPayDisplay(val) {
             const display = document.getElementById('modal-pay-display');
             display.innerText = val;
+            display.style.display = "inline-block";
             const cleanMethod = val.split('(')[0];
-            display.style.background = payColorMap[cleanMethod] || "#ADC2D3";
-            document.getElementById('modal-pay-selector').classList.add('hidden');
+            display.style.backgroundColor = payColorMap[cleanMethod];
             currentParsedData.payMethod = val;
         }
 
@@ -323,24 +302,18 @@
         async function finalSubmit() {
             const btn = document.getElementById('btn-final-submit');
             btn.disabled = true; btn.innerText = "提交中...";
-            
             currentParsedData.deposit = document.getElementById('modal-deposit').value;
-            
             try {
                 await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "addOrder", data: currentParsedData }) });
-                alert("登記成功！"); 
-                document.getElementById('quick-input').value = ""; 
-                closeModal();
+                alert("登記成功！"); document.getElementById('quick-input').value = ""; closeModal();
             } catch (e) { alert("提交失敗"); }
-            finally { btn.disabled = false; btn.innerText = "確認並輸入試算表"; }
+            finally { btn.disabled = false; btn.innerText = "確認並寫入"; }
         }
 
         async function searchOrders() {
             const keyword = document.getElementById('quick-search-input').value.trim();
             if (!keyword) return;
-            const btn = document.getElementById('btn-search-exec');
             const list = document.getElementById('search-results-list');
-            btn.disabled = true;
             list.innerHTML = `<div style="text-align:center; padding:20px; color:#C6AC8F;">搜尋中...</div>`;
             document.getElementById('search-results').classList.remove('hidden');
             try {
@@ -348,103 +321,38 @@
                 const data = await response.json();
                 renderSearchResults(data, list, keyword);
             } catch (e) { list.innerHTML = "搜尋失敗"; }
-            finally { btn.disabled = false; }
         }
 
         function renderSearchResults(data, list, keyword) {
             if (!data || data.length === 0) { list.innerHTML = "找不到資料"; return; }
-            const statusGroups = {};
-            data.forEach(item => {
-                const s = item.status || "未註記";
-                if (!statusGroups[s]) statusGroups[s] = [];
-                statusGroups[s].push(item);
-            });
             let html = `<div style="font-weight:bold; margin-bottom:10px; border-bottom:2px solid var(--accent); padding-bottom:5px;">${keyword} 的訂單 (${data.length} 筆)</div>`;
-            const sortedStatuses = [...new Set([...Object.keys(statusOrder), ...Object.keys(statusGroups)])];
-            sortedStatuses.forEach(status => {
-                if (!statusGroups[status]) return;
-                html += `<div class="status-header">${status}</div>`;
-                const timeGroups = {};
-                statusGroups[status].forEach(item => {
-                    const key = `${item.lineName}_${item.orderDate}`; 
-                    if (!timeGroups[key]) {
-                        timeGroups[key] = {
-                            name: item.lineName, pay: item.payMethod || "", deposit: item.deposit,
-                            payDate: item.payDate, orderDate: item.orderDate, rowIndex: item.rowIndex,
-                            sheetName: item.sheetName, groups: {} 
-                        };
-                    }
-                    if (!timeGroups[key].groups[item.groupName]) timeGroups[key].groups[item.groupName] = [];
-                    timeGroups[key].groups[item.groupName].push(item);
-                });
-                for (let k in timeGroups) {
-                    const tg = timeGroups[k];
-                    const tagColor = payColorMap[tg.pay.split('(')[0]] || "#ADC2D3";
-                    let subTotal = 0;
-                    for (let gName in tg.groups) { tg.groups[gName].forEach(i => subTotal += (parseInt(i.price) || 0)); }
-                    html += `
-                        <div class="result-group" id="group-${tg.rowIndex}" data-sheet="${tg.sheetName}">
-                            <div class="user-header">
-                                <div style="display:flex; align-items:center;">
-                                    <span class="result-tag" id="pay-tag-${tg.rowIndex}" style="background:${tg.pay ? tagColor : 'transparent'}" onclick="showPayOptions(${tg.rowIndex})">${tg.pay}</span>
-                                    <span style="font-size:11px; font-weight:bold; margin:0 8px;">${tg.orderDate}</span>
-                                    <span class="link-text" onclick="quickTrigger('${tg.name}')" style="font-weight:bold;">${tg.name}</span>
-                                </div>
-                                <div style="font-weight:bold;">$${subTotal} <span style="font-size:11px; color:#FB9E09;">(訂:${tg.deposit||0})</span></div>
-                            </div>
-                            <div id="pay-box-${tg.rowIndex}" class="hidden"></div>
-                            <div class="items-container">`;
-                    for (let gName in tg.groups) {
-                        html += `<span class="group-title">${gName}</span>`;
-                        tg.groups[gName].forEach(i => { html += `<div class="item-line" style="margin:2px 0;"><span>${i.name}</span><span>$${i.price}</span></div>`; });
-                    }
-                    html += `</div></div>`;
-                }
+            const timeGroups = {};
+            data.forEach(item => {
+                const key = `${item.lineName}_${item.orderDate}`; 
+                if (!timeGroups[key]) timeGroups[key] = { name: item.lineName, pay: item.payMethod || "", deposit: item.deposit, orderDate: item.orderDate, rowIndex: item.rowIndex, sheetName: item.sheetName, groups: {} };
+                if (!timeGroups[key].groups[item.groupName]) timeGroups[key].groups[item.groupName] = [];
+                timeGroups[key].groups[item.groupName].push(item);
             });
-            list.innerHTML = html;
-        }
-
-        function showPayOptions(rowIndex) {
-            const box = document.getElementById(`pay-box-${rowIndex}`);
-            box.classList.toggle('hidden');
-            box.innerHTML = `
-                <div class="pay-selector">
-                    ${paymentOptions.map(p => 
-                        `<button class="btn-small" onclick="selectPayMethod(${rowIndex}, '${p}')">${p}</button>`
-                    ).join('')}
-                </div>
-                <div id="bank-input-${rowIndex}" class="hidden" style="margin-top:5px;">
-                    <input type="text" placeholder="後五碼" id="code-${rowIndex}" style="padding:8px; width:60%;">
-                    <button class="btn-small active" onclick="confirmBankPay(${rowIndex})">確認</button>
-                </div>`;
-        }
-
-        function selectPayMethod(rowIndex, method) {
-            if (method === '中信' || method === 'LBank') {
-                document.getElementById(`bank-input-${rowIndex}`).classList.remove('hidden');
-                document.getElementById(`bank-input-${rowIndex}`).dataset.method = method;
-            } else { updateField(rowIndex, 'payMethod', method); }
-        }
-
-        function confirmBankPay(rowIndex) {
-            const method = document.getElementById(`bank-input-${rowIndex}`).dataset.method;
-            const code = document.getElementById(`code-${rowIndex}`).value;
-            if (!code) return;
-            updateField(rowIndex, 'payMethod', `${method}(${code})`);
-        }
-
-        async function updateField(rowIndex, field, value) {
-            const groupEl = document.getElementById(`group-${rowIndex}`);
-            const sheetName = groupEl ? groupEl.getAttribute('data-sheet') : "線上";
-            try {
-                await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "updateOrderField", rowIndex: rowIndex, field: field, value: value, sheetName: sheetName }) });
-                if (field === 'payMethod') {
-                    const tag = document.getElementById(`pay-tag-${rowIndex}`);
-                    tag.innerText = value;
-                    tag.style.background = payColorMap[value.split('(')[0]] || "#ADC2D3";
-                    document.getElementById(`pay-box-${rowIndex}`).classList.add('hidden');
+            for (let k in timeGroups) {
+                const tg = timeGroups[k];
+                const tagColor = payColorMap[tg.pay.split('(')[0]] || "#ADC2D3";
+                let subTotal = 0;
+                for (let gName in tg.groups) tg.groups[gName].forEach(i => subTotal += (parseInt(i.price) || 0));
+                html += `<div class="result-group" id="group-${tg.rowIndex}" data-sheet="${tg.sheetName}">
+                    <div class="user-header">
+                        <div style="display:flex; align-items:center;">
+                            <span class="result-tag" style="background:${tagColor}">${tg.pay || '未填'}</span>
+                            <span style="font-size:11px; font-weight:bold; margin:0 8px;">${tg.orderDate}</span>
+                            <span class="link-text" onclick="quickTrigger('${tg.name}')" style="font-weight:bold;">${tg.name}</span>
+                        </div>
+                        <div style="font-weight:bold;">$${subTotal} <span style="font-size:11px; color:#FB9E09;">(訂:${tg.deposit||0})</span></div>
+                    </div><div class="items-container">`;
+                for (let gName in tg.groups) {
+                    html += `<span class="group-title">${gName}</span>` + tg.groups[gName].map(i => `<div class="item-line" style="margin:2px 0;"><span>${i.name}</span><span>$${i.price}</span></div>`).join('');
                 }
-            } catch (e) { alert("更新失敗"); }
+                html += `</div></div>`;
+            }
+            list.innerHTML = html;
         }
 
         async function fetchRecentRecords() {
@@ -452,7 +360,7 @@
             try {
                 const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "queryOrder", keyword: "" }) });
                 const data = await response.json();
-                list.innerHTML = data.slice(0, 20).map(i => `<div class="result-group" style="font-size:12px;"><b>${i.lineName}</b>: ${i.name} ($${i.price}) <span style="color:#999;float:right;">${i.status || ''}</span></div>`).join('');
+                list.innerHTML = data.slice(0, 15).map(i => `<div class="result-group" style="font-size:12px;"><b>${i.lineName}</b>: ${i.name} ($${i.price}) <span style="color:#999;float:right;">${i.status || ''}</span></div>`).join('');
             } catch (e) { list.innerHTML = "讀取失敗"; }
         }
 
