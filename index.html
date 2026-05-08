@@ -49,7 +49,7 @@
         label { font-weight: bold; font-size: 12px; margin-top: 8px; display: block; color: var(--highlight); }
         
         .result-group { border-bottom: 1px solid #eee; padding: 15px 0; position: relative; }
-        .items-container { border-left: 2px solid var(--accent); margin-left: 5px; padding-left: 10px; }
+        .items-container { border-left: 2px solid var(--accent); margin-left: 5px; padding-left: 10px; margin-top: 10px;}
         .item-line { display: flex; justify-content: space-between; font-size: 13px; margin: 6px 0; }
         
         .user-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -68,6 +68,8 @@
         .type-group { display: flex; gap: 10px; margin: 8px 0; }
         .type-item { flex: 1; padding: 10px; text-align: center; background: var(--accent); border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .type-item.active { background: var(--highlight); color: white; }
+
+        .group-title { font-weight: bold; font-size: 13px; color: var(--highlight); margin: 8px 0 4px 0; display: block; text-decoration: underline; cursor: pointer; }
     </style>
 </head>
 <body onload="initApp()">
@@ -153,7 +155,6 @@
         const statusOrder = { "已到貨": 1, "預購中": 2, "出貨完畢": 3 };
 
         function initApp() {
-            // 讀取最後一次開啟的頁面，若無則預設 'add'
             const lastPage = localStorage.getItem('last_active_page') || 'add';
             const lastNavEl = document.getElementById('nav-' + lastPage);
             switchPage(lastPage, lastNavEl);
@@ -199,18 +200,12 @@
         function setSheetType(val, el) { selectedSheetType = val; document.querySelectorAll('.type-item').forEach(i => i.classList.remove('active')); el.classList.add('active'); }
 
         function switchPage(pageId, element) {
-            // 切換頁面顯示
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             const targetPage = document.getElementById('page-' + pageId);
             if (targetPage) targetPage.classList.add('active');
-
-            // 切換導覽列選取狀態
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             if (element) element.classList.add('active');
-
-            // 儲存當前頁面到本地緩存
             localStorage.setItem('last_active_page', pageId);
-
             if (pageId === 'record') fetchRecentRecords();
         }
 
@@ -225,13 +220,17 @@
             try {
                 const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "queryOrder", keyword: keyword }) });
                 const data = await response.json();
-                renderSearchResults(data, list);
+                renderSearchResults(data, list, keyword);
             } catch (e) { list.innerHTML = "搜尋失敗"; }
             finally { btn.disabled = false; }
         }
 
-        function renderSearchResults(data, list) {
+        function renderSearchResults(data, list, keyword) {
             if (!data || data.length === 0) { list.innerHTML = "找不到資料"; return; }
+            
+            // 判斷是否搜尋姓名 (檢查回傳資料中 lineName 是否精確匹配關鍵字)
+            const isSearchingName = data.some(i => i.lineName === keyword);
+            
             const statusGroups = {};
             data.forEach(item => {
                 const s = item.status || "未註記";
@@ -239,64 +238,83 @@
                 statusGroups[s].push(item);
             });
 
-            let html = `<div style="font-weight:bold; margin-bottom:10px; border-bottom:2px solid var(--accent); padding-bottom:5px;">搜尋結果 (${data.length} 筆)</div>`;
+            let html = "";
+            if (isSearchingName) {
+                html = `<div style="font-weight:bold; margin-bottom:10px; border-bottom:2px solid var(--accent); padding-bottom:5px;">「${keyword}」購買清單 (${data.length} 筆)</div>`;
+            } else {
+                html = `<div style="font-weight:bold; margin-bottom:10px; border-bottom:2px solid var(--accent); padding-bottom:5px;">搜尋結果 (${data.length} 筆)</div>`;
+            }
+
             const sortedStatuses = [...new Set([...Object.keys(statusOrder), ...Object.keys(statusGroups)])];
             
             sortedStatuses.forEach(status => {
                 if (!statusGroups[status]) return;
                 html += `<div class="status-header">${status}</div>`;
-                const userGroups = {};
                 
+                // 二次群組化：依據姓名 + 時間戳記 (同時間下單合併)
+                const timeGroups = {};
                 statusGroups[status].forEach(item => {
-                    const dateMark = (item.timestamp && item.timestamp.length >= 10) ? item.timestamp.substring(0, 10) : "no-date";
-                    const key = `${item.lineName}_${item.groupName}_${dateMark}`; 
-                    
-                    if (!userGroups[key]) {
-                        userGroups[key] = { 
-                            name: item.lineName, 
-                            group: item.groupName, 
-                            pay: item.payMethod || "未填", 
-                            deposit: item.deposit, 
-                            items: [], 
-                            total: 0, 
-                            rowIndex: item.rowIndex, 
-                            sheetName: item.sheetName 
+                    const key = `${item.lineName}_${item.timestamp}`; 
+                    if (!timeGroups[key]) {
+                        timeGroups[key] = {
+                            name: item.lineName,
+                            pay: item.payMethod || "未填",
+                            deposit: item.deposit,
+                            timestamp: item.timestamp,
+                            rowIndex: item.rowIndex,
+                            sheetName: item.sheetName,
+                            groups: {} // 存放該訂單下的團名與商品
                         };
                     }
-                    userGroups[key].items.push(item);
-                    userGroups[key].total += (parseInt(item.price) || 0);
+                    
+                    if (!timeGroups[key].groups[item.groupName]) {
+                        timeGroups[key].groups[item.groupName] = [];
+                    }
+                    timeGroups[key].groups[item.groupName].push(item);
                 });
 
-                for (let k in userGroups) {
-                    const g = userGroups[k];
-                    const tagColor = payColorMap[g.pay.split('(')[0]] || "#ADC2D3";
-                    const isDepositEmpty = !g.deposit || g.deposit === "" || g.deposit === 0;
+                for (let k in timeGroups) {
+                    const tg = timeGroups[k];
+                    const tagColor = payColorMap[tg.pay.split('(')[0]] || "#ADC2D3";
+                    const isDepositEmpty = !tg.deposit || tg.deposit === "" || tg.deposit === 0;
+                    
+                    // 計算此時間點下單的總額
+                    let subTotal = 0;
+                    for (let gName in tg.groups) {
+                        tg.groups[gName].forEach(i => subTotal += (parseInt(i.price) || 0));
+                    }
 
-                    html += `<div class="result-group" id="group-${g.rowIndex}" data-sheet="${g.sheetName}">
+                    html += `<div class="result-group" id="group-${tg.rowIndex}" data-sheet="${tg.sheetName}">
                         <div class="user-header">
                             <div>
-                                <span class="result-tag tag-clickable" id="pay-tag-${g.rowIndex}"
+                                <span class="result-tag tag-clickable" id="pay-tag-${tg.rowIndex}"
                                       style="background:${tagColor}" 
-                                      onclick="showPayOptions(${g.rowIndex}, '${g.name}')">${g.pay}</span>
-                                <span class="link-text" onclick="quickTrigger('${g.name}')" style="font-weight:bold; color:var(--highlight);">${g.name}</span>
-                                <span style="font-size:11px; color:#999; margin-left:5px;">${g.group}</span>
+                                      onclick="showPayOptions(${tg.rowIndex}, '${tg.name}')">${tg.pay}</span>
+                                ${!isSearchingName ? `<span class="link-text" onclick="quickTrigger('${tg.name}')" style="font-weight:bold; color:var(--highlight);">${tg.name}</span>` : ''}
                             </div>
                             <div style="font-weight:bold; display:flex; align-items:center;">
-                                $${g.total} 
+                                $${subTotal} 
                                 <span style="font-size:11px; color:#FB9E09; margin-left:5px;">訂金：
-                                    <span id="deposit-display-${g.rowIndex}">
+                                    <span id="deposit-display-${tg.rowIndex}">
                                     ${isDepositEmpty ? 
-                                        `<input type="number" class="deposit-input" placeholder="0" onchange="updateField(${g.rowIndex}, 'deposit', this.value)">` : 
-                                        g.deposit}
+                                        `<input type="number" class="deposit-input" placeholder="0" onchange="updateField(${tg.rowIndex}, 'deposit', this.value)">` : 
+                                        tg.deposit}
                                     </span>
                                 </span>
                             </div>
                         </div>
-                        <div id="pay-box-${g.rowIndex}" class="hidden"></div>
-                        <div class="items-container">
-                            ${g.items.map(i => `<div class="item-line"><span>${i.name}</span><span>$${i.price}</span></div>`).join('')}
-                        </div>
-                    </div>`;
+                        <div id="pay-box-${tg.rowIndex}" class="hidden"></div>
+                        <div class="items-container">`;
+                    
+                    // 顯示團名與商品
+                    for (let gName in tg.groups) {
+                        html += `<span class="group-title" onclick="quickTrigger('${gName}')">${gName}</span>`;
+                        tg.groups[gName].forEach(i => {
+                            html += `<div class="item-line"><span>｜${i.name}</span><span>$${i.price}</span></div>`;
+                        });
+                    }
+                    
+                    html += `</div></div>`;
                 }
             });
             list.innerHTML = html;
@@ -340,7 +358,7 @@
             const sheetName = groupEl ? groupEl.getAttribute('data-sheet') : "線上";
 
             try {
-                const response = await fetch(API_URL, { 
+                await fetch(API_URL, { 
                     method: "POST", 
                     body: JSON.stringify({ 
                         action: "updateOrderField", 
@@ -360,7 +378,6 @@
                 } else if (field === 'deposit') {
                     document.getElementById(`deposit-display-${rowIndex}`).innerText = value;
                 }
-                console.log("更新成功");
             } catch (e) { alert("更新失敗"); }
         }
 
@@ -373,7 +390,10 @@
             } catch (e) { list.innerHTML = "讀取失敗"; }
         }
 
-        function quickTrigger(val) { document.getElementById('quick-search-input').value = val; searchOrders(); }
+        function quickTrigger(val) { 
+            document.getElementById('quick-search-input').value = val; 
+            searchOrders(); 
+        }
 
         function parseAndConfirm() {
             const rawText = document.getElementById('quick-input').value.trim();
