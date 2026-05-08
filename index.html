@@ -230,7 +230,9 @@
                 if (line.includes('$')) {
                     const p = line.match(/(.+)\$(\d+)/);
                     if (p) { 
-                        const name = p[1].trim();
+                        // --- 修改這裡：移除名稱前面的數字編號 ---
+                        const name = p[1].replace(/^\d+[\.\s\-、]*/, '').trim(); 
+                        // ------------------------------------
                         const price = p[2];
                         if (name.includes("總金額")) continue;
                         products.push({ group: currentGroup, name: name, price: price }); 
