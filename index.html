@@ -228,7 +228,7 @@
         function renderSearchResults(data, list, keyword) {
             if (!data || data.length === 0) { list.innerHTML = "找不到資料"; return; }
             
-            // 判斷是否搜尋姓名 (檢查回傳資料中 lineName 是否精確匹配關鍵字)
+            // 判斷是否搜尋姓名
             const isSearchingName = data.some(i => i.lineName === keyword);
             
             const statusGroups = {};
@@ -240,9 +240,11 @@
 
             let html = "";
             if (isSearchingName) {
-                html = `<div style="font-weight:bold; margin-bottom:10px; border-bottom:2px solid var(--accent); padding-bottom:5px;">「${keyword}」購買清單 (${data.length} 筆)</div>`;
+                // 1. 顧客名搜尋結果前面的人名不用加「」
+                html = `<div style="font-weight:bold; margin-bottom:10px; border-bottom:2px solid var(--accent); padding-bottom:5px;">${keyword} 購買清單 (${data.length} 筆)</div>`;
             } else {
-                html = `<div style="font-weight:bold; margin-bottom:10px; border-bottom:2px solid var(--accent); padding-bottom:5px;">搜尋結果 (${data.length} 筆)</div>`;
+                // 2. 搜尋結果修改成：團名 跟團人數清單(xx 筆)
+                html = `<div style="font-weight:bold; margin-bottom:10px; border-bottom:2px solid var(--accent); padding-bottom:5px;">${keyword} 跟團人數清單(${data.length} 筆)</div>`;
             }
 
             const sortedStatuses = [...new Set([...Object.keys(statusOrder), ...Object.keys(statusGroups)])];
@@ -251,7 +253,6 @@
                 if (!statusGroups[status]) return;
                 html += `<div class="status-header">${status}</div>`;
                 
-                // 二次群組化：依據姓名 + 時間戳記 (同時間下單合併)
                 const timeGroups = {};
                 statusGroups[status].forEach(item => {
                     const key = `${item.lineName}_${item.timestamp}`; 
@@ -263,7 +264,7 @@
                             timestamp: item.timestamp,
                             rowIndex: item.rowIndex,
                             sheetName: item.sheetName,
-                            groups: {} // 存放該訂單下的團名與商品
+                            groups: {} 
                         };
                     }
                     
@@ -278,7 +279,6 @@
                     const tagColor = payColorMap[tg.pay.split('(')[0]] || "#ADC2D3";
                     const isDepositEmpty = !tg.deposit || tg.deposit === "" || tg.deposit === 0;
                     
-                    // 計算此時間點下單的總額
                     let subTotal = 0;
                     for (let gName in tg.groups) {
                         tg.groups[gName].forEach(i => subTotal += (parseInt(i.price) || 0));
@@ -306,11 +306,15 @@
                         <div id="pay-box-${tg.rowIndex}" class="hidden"></div>
                         <div class="items-container">`;
                     
-                    // 顯示團名與商品
                     for (let gName in tg.groups) {
-                        html += `<span class="group-title" onclick="quickTrigger('${gName}')">${gName}</span>`;
+                        // 3. 如果是用團名搜尋，團名標題不用出現，直接列出商品即可
+                        if (isSearchingName || gName !== keyword) {
+                             html += `<span class="group-title" onclick="quickTrigger('${gName}')">${gName}</span>`;
+                        }
+                        
                         tg.groups[gName].forEach(i => {
-                            html += `<div class="item-line"><span>｜${i.name}</span><span>$${i.price}</span></div>`;
+                            // 4. 商品名稱前面不用加「｜」
+                            html += `<div class="item-line"><span>${i.name}</span><span>$${i.price}</span></div>`;
                         });
                     }
                     
