@@ -129,8 +129,8 @@
                 </div>
 
                 <label>快速輸入 (姓名 + 訂單內容)</label>
-                <textarea id="quick-input" rows="8" placeholder="第一行要輸入姓名唷 ദ്ദി( ¯꒳¯ ) " autocomplete="off" onkeydown="if(event.keyCode==13 && !event.shiftKey){ event.preventDefault(); parseAndConfirm(); }"></textarea>
-                <button class="btn" onclick="parseAndConfirm()">內容確認</button>
+<textarea id="quick-input" rows="8" placeholder="第一行要輸入姓名唷 ദ്ദി( ¯꒳¯ ) " autocomplete="off" onkeydown="if(event.keyCode==13 && (event.ctrlKey || event.metaKey)){ event.preventDefault(); parseAndConfirm(); }"></textarea>
+<button class="btn" onclick="parseAndConfirm()">內容確認</button>
             </div>
         </div>
 
