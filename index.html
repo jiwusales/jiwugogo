@@ -56,7 +56,9 @@
         .result-tag { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; color: white; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         
         /* 貨況標籤樣式 */
-        .status-tag { display: inline-block; padding: 4px 8px; border-radius: 8px; font-size: 11px; color: white; font-weight: bold; cursor: pointer; margin-right: 5px; text-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+        .status-container { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
+        .status-tag { display: inline-block; padding: 4px 8px; border-radius: 8px; font-size: 11px; color: white; font-weight: bold; cursor: pointer; margin-right: 5px; text-shadow: 0 1px 1px rgba(0,0,0,0.1); white-space: nowrap; }
+        .status-options { display: flex; gap: 4px; margin-top: 5px; padding: 5px; background: #f0f0f0; border-radius: 8px; }
 
         .status-header { background: #F5EBE0; padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; margin-top: 15px; color: #74512D; }
         
@@ -265,9 +267,8 @@
                 }
             }
 
-            let finalStatus = "自動辨識";
+            let finalStatus = "預購中";
             if (selectedSheetType === '現貨') finalStatus = "現貨";
-            if (selectedSheetType === '開團') finalStatus = "預購中";
 
             currentParsedData = { 
                 customerName, 
@@ -364,7 +365,6 @@
             let lastRealDeposit = "";
             let lastRealDate = "";
             let lastRealPayDate = "";
-            let lastRealStatus = ""; // 紀錄貨況 (A欄)
 
             const fixedData = data.map(item => {
                 if (item.lineName && item.lineName.trim() !== "") {
@@ -373,7 +373,6 @@
                     lastRealDeposit = item.deposit;
                     lastRealDate = item.orderDate;
                     lastRealPayDate = item.payDate;
-                    lastRealStatus = item.status || "預購中";
                 }
                 return {
                     ...item,
@@ -381,8 +380,7 @@
                     payMethod: lastRealPay,
                     deposit: lastRealDeposit,
                     orderDate: lastRealDate,
-                    payDate: lastRealPayDate,
-                    status: lastRealStatus
+                    payDate: lastRealPayDate
                 };
             });
 
@@ -408,9 +406,6 @@
                         deposit: item.deposit, 
                         orderDate: item.orderDate, 
                         payDate: item.payDate || "未填",
-                        status: item.status,
-                        rowIndex: item.rowIndex, 
-                        sheetName: item.sheetName, 
                         groups: {} 
                     };
                 }
@@ -421,20 +416,14 @@
             for (let k in timeGroups) {
                 const tg = timeGroups[k];
                 const tagColor = payColorMap[tg.pay.split('(')[0]] || "#ADC2D3";
-                const statusColor = statusColorMap[tg.status] || "#CCCCCC";
                 let subTotal = 0;
                 for (let gName in tg.groups) tg.groups[gName].forEach(i => subTotal += (parseInt(i.price) || 0));
                 
                 const isSearchingName = (tg.name.toLowerCase() === keyword.toLowerCase());
 
-                html += `<div class="result-group" id="group-${tg.rowIndex}" data-sheet="${tg.sheetName}">
+                html += `<div class="result-group">
                     <div class="user-header">
                         <div style="display:flex; align-items:center;">
-                            <!-- 貨況標籤按鈕 -->
-                            <span class="status-tag" id="status-${tg.rowIndex}" 
-                                  style="background:${statusColor}" 
-                                  onclick="toggleStatus('${tg.sheetName}', ${tg.rowIndex}, this)">${tg.status}</span>
-                            
                             <span class="result-tag" style="background:${tagColor}">${tg.pay || '未填'}</span>
                             <span style="font-size:11px; font-weight:bold; margin:0 8px;">${tg.orderDate} <span style="color:#989FC0; font-weight:normal;">| ${tg.payDate}</span></span>
                             ${isSearchingName ? '' : `<span class="link-text" onclick="quickTrigger('${tg.name}')" style="font-weight:bold;">${tg.name}</span>`}
@@ -446,23 +435,48 @@
                     if (gName !== "無" && gName !== keyword) {
                         html += `<span class="group-title" onclick="quickTrigger('${gName}')">${gName}</span>`;
                     }
-                    html += tg.groups[gName].map(i => `<div class="item-line" style="margin:2px 0;"><span>${i.name}</span><span>$${i.price}</span></div>`).join('');
+                    html += tg.groups[gName].map(i => {
+                        const currentStatus = i.status || '預購中';
+                        const statusColor = statusColorMap[currentStatus] || "#CCCCCC";
+                        const uniqueId = `status-${i.sheetName}-${i.rowIndex}`;
+                        return `
+                            <div class="item-line" style="margin:6px 0; align-items: flex-start;">
+                                <div class="status-container" id="container-${uniqueId}">
+                                    <span class="status-tag" id="tag-${uniqueId}" 
+                                          style="background:${statusColor}" 
+                                          onclick="showStatusMenu('${uniqueId}')">${currentStatus}</span>
+                                    <div class="status-options hidden" id="menu-${uniqueId}">
+                                        ${["預購中", "現貨", "已出貨"].map(s => `
+                                            <span class="status-tag" style="background:${statusColorMap[s]}; font-size:10px; padding:2px 6px;" 
+                                                  onclick="updateStatusDirect('${i.sheetName}', ${i.rowIndex}, '${s}', '${uniqueId}')">${s}</span>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                                <div style="flex:1; padding-top:2px;">${i.name}</div>
+                                <span style="font-weight:bold; padding-top:2px;">$${i.price}</span>
+                            </div>`;
+                    }).join('');
                 }
                 html += `</div></div>`;
             }
             list.innerHTML = html;
         }
 
-        // 切換貨況標籤並回傳試算表
-        async function toggleStatus(sheetName, rowIndex, el) {
-            const currentStatus = el.innerText;
-            const statusFlow = ["預購中", "現貨", "已出貨"];
-            let nextIndex = (statusFlow.indexOf(currentStatus) + 1) % statusFlow.length;
-            const nextStatus = statusFlow[nextIndex];
+        // 展開選單
+        function showStatusMenu(id) {
+            document.getElementById(`menu-${id}`).classList.toggle('hidden');
+        }
+
+        // 直接更新貨況
+        async function updateStatusDirect(sheetName, rowIndex, nextStatus, id) {
+            const tag = document.getElementById(`tag-${id}`);
+            const menu = document.getElementById(`menu-${id}`);
+            const oldStatus = tag.innerText;
             
-            // UI 先行更新感官
-            el.innerText = "更新中...";
-            el.style.opacity = "0.5";
+            // UI 先行更新
+            tag.innerText = "更新中...";
+            tag.style.opacity = "0.5";
+            menu.classList.add('hidden');
 
             try {
                 const response = await fetch(API_URL, { 
@@ -477,17 +491,19 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    el.innerText = nextStatus;
-                    el.style.backgroundColor = statusColorMap[nextStatus];
-                    el.style.opacity = "1";
+                    tag.innerText = nextStatus;
+                    tag.style.backgroundColor = statusColorMap[nextStatus];
                 } else {
                     alert("更新失敗：" + result.message);
-                    el.innerText = currentStatus;
+                    tag.innerText = oldStatus;
+                    tag.style.backgroundColor = statusColorMap[oldStatus];
                 }
             } catch (e) {
                 alert("網路錯誤");
-                el.innerText = currentStatus;
-                el.style.opacity = "1";
+                tag.innerText = oldStatus;
+                tag.style.backgroundColor = statusColorMap[oldStatus];
+            } finally {
+                tag.style.opacity = "1";
             }
         }
 
