@@ -190,8 +190,6 @@
                 const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "getIPs" }) });
                 const data = await response.json();
                 if (Array.isArray(data)) { 
-                    // 預期後端回傳格式為 [{name: "Sakamoto", count: 10}, ...]
-                    // 如果後端只給字串陣列，排序功能將依賴前端點擊紀錄或後端更新
                     ipList = data; 
                     localStorage.setItem('cached_ip_list', JSON.stringify(data));
                     renderIPButtons(); 
@@ -201,18 +199,19 @@
 
         function renderIPButtons() {
             const container = document.getElementById('ip-buttons');
+            const priorityOrder = ["吉伊卡哇", "白熊", "三麗鷗", "寶可夢"];
             
-            // 排序邏輯：若物件包含 count 則按次數排，否則按字母
-            let sortedList = [...ipList].sort((a, b) => {
-                if (typeof a === 'object' && a.count !== undefined) {
-                    return b.count - a.count;
-                }
-                return 0; 
-            });
+            // 提取純名稱清單
+            let allNames = ipList.map(ip => (typeof ip === 'object' ? ip.name : ip));
+            
+            // 找出在 priorityOrder 之外的其他 IP
+            let others = allNames.filter(name => !priorityOrder.includes(name));
+            
+            // 合併：優先順序 + 其他隨意排
+            let finalOrder = priorityOrder.filter(name => allNames.includes(name)).concat(others);
 
             container.innerHTML = `<button class="btn-small ${selectedIP === '多團' ? 'active' : ''}" onclick="setIP('多團')">自動辨識</button>` + 
-                sortedList.map(ip => {
-                    const name = typeof ip === 'object' ? ip.name : ip;
+                finalOrder.map(name => {
                     return `<button class="btn-small ${name === selectedIP ? 'active' : ''}" onclick="setIP('${name}')">${name}</button>`;
                 }).join('');
         }
@@ -324,7 +323,6 @@
             try {
                 await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "addOrder", data: currentParsedData }) });
                 alert("登記成功！"); document.getElementById('quick-input').value = ""; closeModal();
-                // 成功後重新抓取 IP 以反映最新的出現次數
                 fetchIPs();
             } catch (e) { alert("提交失敗"); }
             finally { btn.disabled = false; btn.innerText = "確認並寫入"; }
