@@ -235,60 +235,65 @@
         }
 
         function parseAndConfirm() {
-            const rawText = document.getElementById('quick-input').value.trim();
-            if (!rawText) return;
-            const lines = rawText.split('\n').map(l => l.trim()).filter(l => l !== "");
-            const customerName = lines[0];
-            const products = [];
-            let currentGroup = "無";
-            let total = 0;
+    const rawText = document.getElementById('quick-input').value.trim();
+    if (!rawText) return;
+    const lines = rawText.split('\n').map(l => l.trim()).filter(l => l !== "");
+    const customerName = lines[0];
+    const products = [];
+    let currentGroup = "無";
+    let total = 0;
 
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i];
-                if (line.match(/【(.+)】/)) { currentGroup = line.match(/【(.+)】/)[1]; continue; }
-                if (line.includes('$')) {
-                    const p = line.match(/(.+)\$(\d+)/);
-                    if (p) { 
-                        const name = p[1].replace(/^\d+[\.\s\-、]*/, '').trim(); 
-                        const price = p[2];
-                        if (name.includes("總金額")) continue;
-                        products.push({ group: currentGroup, name: name, price: price }); 
-                        total += parseInt(price); 
-                    }
-                }
+    for (let i = 1; i < lines.length; i++) {
+        const line = lines[i];
+        if (line.match(/【(.+)】/)) { currentGroup = line.match(/【(.+)】/)[1]; continue; }
+        if (line.includes('$')) {
+            const p = line.match(/(.+)\$(\d+)/);
+            if (p) { 
+                const name = p[1].replace(/^\d+[\.\s\-、]*/, '').trim(); 
+                const price = p[2];
+                if (name.includes("總金額")) continue;
+                products.push({ group: currentGroup, name: name, price: price }); 
+                total += parseInt(price); 
             }
-
-            // 修改邏輯：如果選擇「現貨」，則 type 強制設為「線上」，並額外傳入 status: "現貨"
-            currentParsedData = { 
-                customerName, 
-                products, 
-                total, 
-                type: (selectedSheetType === '現貨' ? '線上' : selectedSheetType), 
-                status: (selectedSheetType === '現貨' ? '現貨' : '預購中'),
-                ip: selectedIP, 
-                deposit: "", 
-                payMethod: "" 
-            };
-            
-            let detailHtml = `<div style="background:#f9f9f9; padding:10px; border-radius:10px; margin-bottom:10px; font-size:13px;"><b>顧客：</b>${customerName}<br><b>來源：</b>${selectedSheetType}</div><div class="items-container" style="border:none; margin:0; padding:0;">`;
-            products.forEach(item => {
-                detailHtml += `
-                    <div class="item-line" style="margin-bottom:12px; border-bottom:1px solid #f0f0f0; padding-bottom:8px;">
-                        <div style="flex:1;">
-                            <div style="font-weight:bold; color:var(--text);">${item.name}</div>
-                            <div style="display:inline-block; font-size:10px; background:var(--accent); color:var(--highlight); padding:1px 6px; border-radius:4px; margin-top:2px;">${item.group}</div>
-                        </div>
-                        <div style="font-weight:bold; color:var(--highlight); font-size:15px;">$${item.price}</div>
-                    </div>`;
-            });
-            detailHtml += `</div><div style="text-align:right; font-size:18px; font-weight:bold; margin-top:10px; color:var(--highlight);">總金額：$${total}</div>`;
-
-            document.getElementById('confirm-content').innerHTML = detailHtml;
-            document.getElementById('modal-deposit').value = "";
-            document.getElementById('modal-bank-input').classList.add('hidden');
-            document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('confirm-modal').classList.remove('hidden');
         }
+    }
+
+    // --- 核心邏輯修改處 ---
+    let finalStatus = "自動辨識"; // 預設為線上模式的辨識
+    if (selectedSheetType === '現貨') finalStatus = "現貨";
+    if (selectedSheetType === '開團') finalStatus = "預購中";
+
+    currentParsedData = { 
+        customerName, 
+        products, 
+        total, 
+        type: (selectedSheetType === '現貨' ? '線上' : selectedSheetType), // 現貨寫入線上表
+        status: finalStatus, // 傳送狀態給後端
+        ip: selectedIP, 
+        deposit: "", 
+        payMethod: "" 
+    };
+    // ----------------------
+    
+    let detailHtml = `<div style="background:#f9f9f9; padding:10px; border-radius:10px; margin-bottom:10px; font-size:13px;"><b>顧客：</b>${customerName}<br><b>來源：</b>${selectedSheetType}</div><div class="items-container" style="border:none; margin:0; padding:0;">`;
+    products.forEach(item => {
+        detailHtml += `
+            <div class="item-line" style="margin-bottom:12px; border-bottom:1px solid #f0f0f0; padding-bottom:8px;">
+                <div style="flex:1;">
+                    <div style="font-weight:bold; color:var(--text);">${item.name}</div>
+                    <div style="display:inline-block; font-size:10px; background:var(--accent); color:var(--highlight); padding:1px 6px; border-radius:4px; margin-top:2px;">${item.group}</div>
+                </div>
+                <div style="font-weight:bold; color:var(--highlight); font-size:15px;">$${item.price}</div>
+            </div>`;
+    });
+    detailHtml += `</div><div style="text-align:right; font-size:18px; font-weight:bold; margin-top:10px; color:var(--highlight);">總金額：$${total}</div>`;
+
+    document.getElementById('confirm-content').innerHTML = detailHtml;
+    document.getElementById('modal-deposit').value = "";
+    document.getElementById('modal-bank-input').classList.add('hidden');
+    document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('confirm-modal').classList.remove('hidden');
+}
 
         function selectModalPay(method) {
             document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('active'));
