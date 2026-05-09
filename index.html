@@ -174,7 +174,15 @@
         function initApp() {
             const lastPage = localStorage.getItem('last_active_page') || 'add';
             switchPage(lastPage, document.getElementById('nav-' + lastPage));
-            fetchIPs();
+            
+            // 從本地快取讀取 IP 列表，避免重新整理時消失
+            const cachedIPs = localStorage.getItem('cached_ip_list');
+            if (cachedIPs) {
+                ipList = JSON.parse(cachedIPs);
+                renderIPButtons();
+            }
+            
+            fetchIPs(); // 靜默更新最新 IP
             renderModalPaySelector();
         }
 
@@ -182,7 +190,11 @@
             try {
                 const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "getIPs" }) });
                 const data = await response.json();
-                if (Array.isArray(data)) { ipList = data; renderIPButtons(); }
+                if (Array.isArray(data)) { 
+                    ipList = data; 
+                    localStorage.setItem('cached_ip_list', JSON.stringify(data)); // 更新快取
+                    renderIPButtons(); 
+                }
             } catch (e) { console.error(e); }
         }
 
@@ -241,7 +253,6 @@
 
             currentParsedData = { customerName, products, total, type: (selectedSheetType === '現貨' ? '線上' : selectedSheetType), ip: selectedIP, deposit: "", payMethod: "" };
             
-            // --- 核心修改：讓標籤(Group)在確認畫面中持續顯示在商品下方 ---
             let detailHtml = `<div style="background:#f9f9f9; padding:10px; border-radius:10px; margin-bottom:10px; font-size:13px;"><b>顧客：</b>${customerName}<br><b>來源：</b>${selectedSheetType}</div><div class="items-container" style="border:none; margin:0; padding:0;">`;
             products.forEach(item => {
                 detailHtml += `
