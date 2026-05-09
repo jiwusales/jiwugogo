@@ -58,7 +58,7 @@
         
         .link-text { cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
         .hidden { display: none !important; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0); z-index: 2000; display: flex; align-items: center; justify-content: center; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); z-index: 2000; display: flex; align-items: center; justify-content: center; }
         .confirm-card { background: white; width: 90%; max-width: 450px; border-radius: 20px; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); max-height: 85vh; overflow-y: auto; border: 1px solid #eee; }
         
         .pay-selector-direct { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
@@ -230,9 +230,7 @@
                 if (line.includes('$')) {
                     const p = line.match(/(.+)\$(\d+)/);
                     if (p) { 
-                        // --- 修改這裡：移除名稱前面的數字編號 ---
                         const name = p[1].replace(/^\d+[\.\s\-、]*/, '').trim(); 
-                        // ------------------------------------
                         const price = p[2];
                         if (name.includes("總金額")) continue;
                         products.push({ group: currentGroup, name: name, price: price }); 
@@ -243,9 +241,17 @@
 
             currentParsedData = { customerName, products, total, type: (selectedSheetType === '現貨' ? '線上' : selectedSheetType), ip: selectedIP, deposit: "", payMethod: "" };
             
+            // --- 核心修改：讓標籤(Group)在確認畫面中持續顯示在商品下方 ---
             let detailHtml = `<div style="background:#f9f9f9; padding:10px; border-radius:10px; margin-bottom:10px; font-size:13px;"><b>顧客：</b>${customerName}<br><b>來源：</b>${selectedSheetType}</div><div class="items-container" style="border:none; margin:0; padding:0;">`;
             products.forEach(item => {
-                detailHtml += `<div class="item-line"><div style="flex:1;"><div style="font-weight:bold;">${item.name}</div><div style="font-size:11px; color:#999;">${item.group}</div></div><div style="font-weight:bold;">$${item.price}</div></div>`;
+                detailHtml += `
+                    <div class="item-line" style="margin-bottom:12px; border-bottom:1px solid #f0f0f0; padding-bottom:8px;">
+                        <div style="flex:1;">
+                            <div style="font-weight:bold; color:var(--text);">${item.name}</div>
+                            <div style="display:inline-block; font-size:10px; background:var(--accent); color:var(--highlight); padding:1px 6px; border-radius:4px; margin-top:2px;">${item.group}</div>
+                        </div>
+                        <div style="font-weight:bold; color:var(--highlight); font-size:15px;">$${item.price}</div>
+                    </div>`;
             });
             detailHtml += `</div><div style="text-align:right; font-size:18px; font-weight:bold; margin-top:10px; color:var(--highlight);">總金額：$${total}</div>`;
 
@@ -329,7 +335,6 @@
                 let subTotal = 0;
                 for (let gName in tg.groups) tg.groups[gName].forEach(i => subTotal += (parseInt(i.price) || 0));
                 
-                // 邏輯：如果搜尋的是姓名，則不顯示姓名標籤；如果是團名，則不顯示團名標籤
                 const isSearchingName = (tg.name === keyword);
 
                 html += `<div class="result-group" id="group-${tg.rowIndex}" data-sheet="${tg.sheetName}">
