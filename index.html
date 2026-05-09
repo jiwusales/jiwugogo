@@ -60,7 +60,7 @@
         .status-tag { display: inline-block; padding: 4px 8px; border-radius: 8px; font-size: 11px; color: white; font-weight: bold; cursor: pointer; margin-right: 5px; text-shadow: 0 1px 1px rgba(0,0,0,0.1); white-space: nowrap; }
         .status-options { display: flex; gap: 4px; margin-top: 5px; padding: 5px; background: #f0f0f0; border-radius: 8px; }
 
-        .status-header { background: #F5EBE0; padding: 8px 12px; border-radius: 8px; font-size: 14px; font-weight: bold; margin-top: 15px; color: #74512D; border-left: 4px solid var(--highlight); }
+        .status-header { background: #F5EBE0; padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; margin-top: 15px; color: #74512D; }
         
         .link-text { cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
         .hidden { display: none !important; }
@@ -178,7 +178,7 @@
         const paymentOptions = ['中信', 'LBank', 'LPay', 'IPass', '無卡', '現金'];
         
         // 貨況顏色對照表
-        const statusColorMap = { "預購中": "#DEBAD6", "現貨": "#FFE15E", "已出貨": "#88857D" };
+        const statusColorMap = { "預購": "#DEBAD6", "現貨": "#FFE15E", "已出貨": "#88857D" };
 
         function initApp() {
             const lastPage = localStorage.getItem('last_active_page') || 'add';
@@ -267,7 +267,7 @@
                 }
             }
 
-            let finalStatus = "預購中";
+            let finalStatus = "預購";
             if (selectedSheetType === '現貨') finalStatus = "現貨";
 
             currentParsedData = { 
@@ -394,77 +394,59 @@
 
             if (filteredData.length === 0) { list.innerHTML = "找不到相關資料"; return; }
 
-            // 1. 依照貨況分組
-            const statusGroups = { "現貨": [], "預購中": [], "已出貨": [] };
+            let html = `<div style="font-weight:bold; margin-bottom:10px; border-bottom:2px solid var(--accent); padding-bottom:5px;">${keyword} 的訂單 (${filteredData.length} 筆)</div>`;
+            
+            const timeGroups = {};
             filteredData.forEach(item => {
-                let s = item.status || "預購中";
-                if (!statusGroups[s]) statusGroups[s] = [];
-                statusGroups[s].push(item);
+                const key = `${item.lineName}_${item.orderDate}_${item.payMethod}`; 
+                if (!timeGroups[key]) {
+                    timeGroups[key] = { 
+                        name: item.lineName, 
+                        pay: item.payMethod || "", 
+                        deposit: item.deposit, 
+                        orderDate: item.orderDate, 
+                        payDate: item.payDate || "未填",
+                        groups: {} 
+                    };
+                }
+                if (!timeGroups[key].groups[item.groupName]) timeGroups[key].groups[item.groupName] = [];
+                timeGroups[key].groups[item.groupName].push(item);
             });
 
-            let finalHtml = `<div style="font-weight:bold; margin-bottom:10px; border-bottom:2px solid var(--accent); padding-bottom:5px;">${keyword} 的搜尋結果</div>`;
-            
-            // 2. 依照 現貨 > 預購中 > 已出貨 順序渲染
-            const renderOrder = ["現貨", "預購中", "已出貨"];
-            
-            renderOrder.forEach(statusKey => {
-                const groupItems = statusGroups[statusKey];
-                if (groupItems.length === 0) return;
+            for (let k in timeGroups) {
+                const tg = timeGroups[k];
+                const tagColor = payColorMap[tg.pay.split('(')[0]] || "#ADC2D3";
+                let subTotal = 0;
+                for (let gName in tg.groups) tg.groups[gName].forEach(i => subTotal += (parseInt(i.price) || 0));
+                
+                const isSearchingName = (tg.name.toLowerCase() === keyword.toLowerCase());
 
-                finalHtml += `<div class="status-header">${statusKey} (${groupItems.length} 筆)</div>`;
-
-                // 在狀態組內再依照時間/付款方式分組 (維持原本顯示邏輯)
-                const timeGroups = {};
-                groupItems.forEach(item => {
-                    const key = `${item.lineName}_${item.orderDate}_${item.payMethod}`; 
-                    if (!timeGroups[key]) {
-                        timeGroups[key] = { 
-                            name: item.lineName, 
-                            pay: item.payMethod || "", 
-                            deposit: item.deposit, 
-                            orderDate: item.orderDate, 
-                            payDate: item.payDate || "未填",
-                            items: [] 
-                        };
-                    }
-                    timeGroups[key].items.push(item);
-                });
-
-                for (let k in timeGroups) {
-                    const tg = timeGroups[k];
-                    const tagColor = payColorMap[tg.pay.split('(')[0]] || "#ADC2D3";
-                    let subTotal = tg.items.reduce((sum, i) => sum + (parseInt(i.price) || 0), 0);
-                    const isSearchingName = (tg.name.toLowerCase() === keyword.toLowerCase());
-
-                    finalHtml += `
-                    <div class="result-group">
-                        <div class="user-header">
-                            <div style="display:flex; align-items:center;">
-                                <span class="result-tag" style="background:${tagColor}">${tg.pay || '未填'}</span>
-                                <span style="font-size:11px; font-weight:bold; margin:0 8px;">${tg.orderDate} <span style="color:#989FC0; font-weight:normal;">| ${tg.payDate}</span></span>
-                                ${isSearchingName ? '' : `<span class="link-text" onclick="quickTrigger('${tg.name}')" style="font-weight:bold;">${tg.name}</span>`}
-                            </div>
-                            <div style="font-weight:bold;">$${subTotal} <span style="font-size:11px; color:#FB9E09;">（訂金：${tg.deposit||0}）</span></div>
+                html += `<div class="result-group">
+                    <div class="user-header">
+                        <div style="display:flex; align-items:center;">
+                            <span class="result-tag" style="background:${tagColor}">${tg.pay || '未填'}</span>
+                            <span style="font-size:11px; font-weight:bold; margin:0 8px;">${tg.orderDate} <span style="color:#989FC0; font-weight:normal;">| ${tg.payDate}</span></span>
+                            ${isSearchingName ? '' : `<span class="link-text" onclick="quickTrigger('${tg.name}')" style="font-weight:bold;">${tg.name}</span>`}
                         </div>
-                        <div class="items-container">`;
-
-                    tg.items.forEach(i => {
-                        const currentStatus = i.status || '預購中';
+                        <div style="font-weight:bold;">$${subTotal} <span style="font-size:11px; color:#FB9E09;">（訂金：${tg.deposit||0}）</span></div>
+                    </div><div class="items-container">`;
+                
+                for (let gName in tg.groups) {
+                    if (gName !== "無" && gName !== keyword) {
+                        html += `<span class="group-title" onclick="quickTrigger('${gName}')">${gName}</span>`;
+                    }
+                    html += tg.groups[gName].map(i => {
+                        const currentStatus = i.status || '預購';
                         const statusColor = statusColorMap[currentStatus] || "#CCCCCC";
                         const uniqueId = `status-${i.sheetName}-${i.rowIndex}`;
-                        
-                        // 判斷是否需要顯示團名
-                        let groupLabel = (i.groupName !== "無" && i.groupName !== keyword) ? `<span class="group-title" onclick="quickTrigger('${i.groupName}')">${i.groupName}</span>` : '';
-
-                        finalHtml += `
-                            ${groupLabel}
+                        return `
                             <div class="item-line" style="margin:6px 0; align-items: flex-start;">
                                 <div class="status-container" id="container-${uniqueId}">
                                     <span class="status-tag" id="tag-${uniqueId}" 
                                           style="background:${statusColor}" 
                                           onclick="showStatusMenu('${uniqueId}')">${currentStatus}</span>
                                     <div class="status-options hidden" id="menu-${uniqueId}">
-                                        ${["預購中", "現貨", "已出貨"].map(s => `
+                                        ${["預購", "現貨", "已出貨"].map(s => `
                                             <span class="status-tag" style="background:${statusColorMap[s]}; font-size:10px; padding:2px 6px;" 
                                                   onclick="updateStatusDirect('${i.sheetName}', ${i.rowIndex}, '${s}', '${uniqueId}')">${s}</span>
                                         `).join('')}
@@ -473,12 +455,11 @@
                                 <div style="flex:1; padding-top:2px;">${i.name}</div>
                                 <span style="font-weight:bold; padding-top:2px;">$${i.price}</span>
                             </div>`;
-                    });
-                    finalHtml += `</div></div>`;
+                    }).join('');
                 }
-            });
-
-            list.innerHTML = finalHtml;
+                html += `</div></div>`;
+            }
+            list.innerHTML = html;
         }
 
         // 展開選單
@@ -512,8 +493,6 @@
                 if (result.success) {
                     tag.innerText = nextStatus;
                     tag.style.backgroundColor = statusColorMap[nextStatus];
-                    // 提示使用者需要重新搜尋來看到新的分類
-                    tag.innerText = nextStatus + " (待重搜)";
                 } else {
                     alert("更新失敗：" + result.message);
                     tag.innerText = oldStatus;
