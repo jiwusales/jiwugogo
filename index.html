@@ -113,7 +113,7 @@
                 <div class="ip-group" id="ip-buttons">
                     <button class="btn-small active" onclick="setIP('多團')">自動辨識</button>
                 </div>
-                <input type="text" id="other-ip-input" class="hidden" placeholder="輸入IP名稱">
+                <input type="text" id="other-ip-input" class="hidden" placeholder="輸入IP名稱" autocomplete="off">
 
                 <label>訂單來源</label>
                 <div class="type-group">
@@ -123,7 +123,7 @@
                 </div>
 
                 <label>快速輸入 (姓名 + 訂單內容)</label>
-                <textarea id="quick-input" rows="8" placeholder="第一行要輸入姓名唷 ദ്ദി( ¯꒳¯ ) "></textarea>
+                <textarea id="quick-input" rows="8" placeholder="第一行要輸入姓名唷 ദ്ദി( ¯꒳¯ ) " autocomplete="off" onkeydown="if(event.keyCode==13 && !event.shiftKey){ event.preventDefault(); parseAndConfirm(); }"></textarea>
                 <button class="btn" onclick="parseAndConfirm()">內容確認</button>
             </div>
         </div>
@@ -133,7 +133,7 @@
             <div class="card">
                 <label>輸入團名或姓名</label>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="text" id="quick-search-input" placeholder=" " style="margin: 0; flex: 1;">
+                    <input type="text" id="quick-search-input" placeholder=" " style="margin: 0; flex: 1;" autocomplete="off" onkeydown="if(event.keyCode==13){ searchOrders(); }">
                     <button class="btn" id="btn-search-exec" onclick="searchOrders()" style="width: 80px; margin: 0;">搜尋</button>
                 </div>
             </div>
@@ -166,14 +166,14 @@
                 <div id="modal-bank-input" class="hidden" style="margin-top:10px; background: #fdfdfd; padding: 10px; border-radius: 10px; border: 1px dashed var(--accent);">
                     <div style="font-size: 12px; margin-bottom: 5px; color: var(--highlight);" id="bank-input-label"></div>
                     <div style="display: flex; gap: 5px;">
-                        <input type="text" placeholder="輸入後五碼" id="modal-code" style="padding:8px; margin:0; flex: 1; font-size:14px;">
+                        <input type="text" placeholder="輸入後五碼" id="modal-code" style="padding:8px; margin:0; flex: 1; font-size:14px;" autocomplete="off" onkeydown="if(event.keyCode==13){ confirmModalBank(); }">
                         <button class="btn-small active" onclick="confirmModalBank()" style="margin:0; padding: 0 15px;">確認</button>
                     </div>
                 </div>
 
                 <div style="margin-top: 15px;">
                     <label style="margin:0;">訂金</label>
-                    <input type="number" id="modal-deposit" class="deposit-input" placeholder="請輸入金額">
+                    <input type="number" id="modal-deposit" class="deposit-input" placeholder="請輸入金額" onkeydown="if(event.keyCode==13){ finalSubmit(); }">
                 </div>
             </div>
 
