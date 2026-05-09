@@ -54,6 +54,10 @@
         
         .user-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .result-tag { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; color: white; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
+        /* 貨況標籤樣式 */
+        .status-tag { display: inline-block; padding: 4px 8px; border-radius: 8px; font-size: 11px; color: white; font-weight: bold; cursor: pointer; margin-right: 5px; text-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+
         .status-header { background: #F5EBE0; padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; margin-top: 15px; color: #74512D; }
         
         .link-text { cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
@@ -170,6 +174,9 @@
         let ipList = []; let selectedIP = "多團"; let selectedSheetType = "線上"; let currentParsedData = null;
         const payColorMap = { "中信": "#599D9C", "LPay": "#00B900", "現金": "#FDD55E", "無卡": "#ADC2D3", "LBank": "#1E77BD", "IPass": "#F09163" };
         const paymentOptions = ['中信', 'LBank', 'LPay', 'IPass', '無卡', '現金'];
+        
+        // 貨況顏色對照表
+        const statusColorMap = { "預購中": "#DEBAD6", "現貨": "#FFE15E", "已出貨": "#88857D" };
 
         function initApp() {
             const lastPage = localStorage.getItem('last_active_page') || 'add';
@@ -357,6 +364,7 @@
             let lastRealDeposit = "";
             let lastRealDate = "";
             let lastRealPayDate = "";
+            let lastRealStatus = ""; // 紀錄貨況 (A欄)
 
             const fixedData = data.map(item => {
                 if (item.lineName && item.lineName.trim() !== "") {
@@ -365,6 +373,7 @@
                     lastRealDeposit = item.deposit;
                     lastRealDate = item.orderDate;
                     lastRealPayDate = item.payDate;
+                    lastRealStatus = item.status || "預購中";
                 }
                 return {
                     ...item,
@@ -372,7 +381,8 @@
                     payMethod: lastRealPay,
                     deposit: lastRealDeposit,
                     orderDate: lastRealDate,
-                    payDate: lastRealPayDate
+                    payDate: lastRealPayDate,
+                    status: lastRealStatus
                 };
             });
 
@@ -380,7 +390,6 @@
                 const searchKey = keyword.toLowerCase();
                 const name = item.lineName.toLowerCase();
                 const group = item.groupName.toLowerCase();
-                // 如果搜尋詞完全等於顧客姓名，則只顯示該姓名。否則維持團名包含搜尋。
                 if (name === searchKey) return true;
                 return group.includes(searchKey);
             });
@@ -399,6 +408,7 @@
                         deposit: item.deposit, 
                         orderDate: item.orderDate, 
                         payDate: item.payDate || "未填",
+                        status: item.status,
                         rowIndex: item.rowIndex, 
                         sheetName: item.sheetName, 
                         groups: {} 
@@ -411,6 +421,7 @@
             for (let k in timeGroups) {
                 const tg = timeGroups[k];
                 const tagColor = payColorMap[tg.pay.split('(')[0]] || "#ADC2D3";
+                const statusColor = statusColorMap[tg.status] || "#CCCCCC";
                 let subTotal = 0;
                 for (let gName in tg.groups) tg.groups[gName].forEach(i => subTotal += (parseInt(i.price) || 0));
                 
@@ -419,6 +430,11 @@
                 html += `<div class="result-group" id="group-${tg.rowIndex}" data-sheet="${tg.sheetName}">
                     <div class="user-header">
                         <div style="display:flex; align-items:center;">
+                            <!-- 貨況標籤按鈕 -->
+                            <span class="status-tag" id="status-${tg.rowIndex}" 
+                                  style="background:${statusColor}" 
+                                  onclick="toggleStatus('${tg.sheetName}', ${tg.rowIndex}, this)">${tg.status}</span>
+                            
                             <span class="result-tag" style="background:${tagColor}">${tg.pay || '未填'}</span>
                             <span style="font-size:11px; font-weight:bold; margin:0 8px;">${tg.orderDate} <span style="color:#989FC0; font-weight:normal;">| ${tg.payDate}</span></span>
                             ${isSearchingName ? '' : `<span class="link-text" onclick="quickTrigger('${tg.name}')" style="font-weight:bold;">${tg.name}</span>`}
@@ -435,6 +451,44 @@
                 html += `</div></div>`;
             }
             list.innerHTML = html;
+        }
+
+        // 切換貨況標籤並回傳試算表
+        async function toggleStatus(sheetName, rowIndex, el) {
+            const currentStatus = el.innerText;
+            const statusFlow = ["預購中", "現貨", "已出貨"];
+            let nextIndex = (statusFlow.indexOf(currentStatus) + 1) % statusFlow.length;
+            const nextStatus = statusFlow[nextIndex];
+            
+            // UI 先行更新感官
+            el.innerText = "更新中...";
+            el.style.opacity = "0.5";
+
+            try {
+                const response = await fetch(API_URL, { 
+                    method: "POST", 
+                    body: JSON.stringify({ 
+                        action: "updateStatus", 
+                        sheetName: sheetName, 
+                        rowIndex: rowIndex, 
+                        status: nextStatus 
+                    }) 
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    el.innerText = nextStatus;
+                    el.style.backgroundColor = statusColorMap[nextStatus];
+                    el.style.opacity = "1";
+                } else {
+                    alert("更新失敗：" + result.message);
+                    el.innerText = currentStatus;
+                }
+            } catch (e) {
+                alert("網路錯誤");
+                el.innerText = currentStatus;
+                el.style.opacity = "1";
+            }
         }
 
         async function fetchRecentRecords() {
