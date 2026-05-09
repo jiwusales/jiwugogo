@@ -178,7 +178,7 @@
         const paymentOptions = ['中信', 'LBank', 'LPay', 'IPass', '無卡', '現金'];
         
         // 貨況顏色對照表
-        const statusColorMap = { "預購中": "#DEBAD6", "現貨": "#FFE15E", "已出貨": "#88857D" };
+        const statusColorMap = { "預購": "#DEBAD6", "現貨": "#FFE15E", "已出貨": "#88857D" };
 
         function initApp() {
             const lastPage = localStorage.getItem('last_active_page') || 'add';
@@ -267,7 +267,7 @@
                 }
             }
 
-            let finalStatus = "預購中";
+            let finalStatus = "預購";
             if (selectedSheetType === '現貨') finalStatus = "現貨";
 
             currentParsedData = { 
@@ -436,7 +436,7 @@
                         html += `<span class="group-title" onclick="quickTrigger('${gName}')">${gName}</span>`;
                     }
                     html += tg.groups[gName].map(i => {
-                        const currentStatus = i.status || '預購中';
+                        const currentStatus = i.status || '預購';
                         const statusColor = statusColorMap[currentStatus] || "#CCCCCC";
                         const uniqueId = `status-${i.sheetName}-${i.rowIndex}`;
                         return `
@@ -446,7 +446,7 @@
                                           style="background:${statusColor}" 
                                           onclick="showStatusMenu('${uniqueId}')">${currentStatus}</span>
                                     <div class="status-options hidden" id="menu-${uniqueId}">
-                                        ${["預購中", "現貨", "已出貨"].map(s => `
+                                        ${["預購", "現貨", "已出貨"].map(s => `
                                             <span class="status-tag" style="background:${statusColorMap[s]}; font-size:10px; padding:2px 6px;" 
                                                   onclick="updateStatusDirect('${i.sheetName}', ${i.rowIndex}, '${s}', '${uniqueId}')">${s}</span>
                                         `).join('')}
