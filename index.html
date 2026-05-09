@@ -352,46 +352,89 @@
         }
 
         function renderSearchResults(data, list, keyword) {
-            if (!data || data.length === 0) { list.innerHTML = "找不到資料"; return; }
-            let html = `<div style="font-weight:bold; margin-bottom:10px; border-bottom:2px solid var(--accent); padding-bottom:5px;">${keyword} 的訂單 (${data.length} 筆)</div>`;
-            const timeGroups = {};
-            
-            data.forEach(item => {
-                const key = `${item.lineName}_${item.orderDate}`; 
-                if (!timeGroups[key]) timeGroups[key] = { name: item.lineName, pay: item.payMethod || "", deposit: item.deposit, orderDate: item.orderDate, rowIndex: item.rowIndex, sheetName: item.sheetName, groups: {} };
-                if (!timeGroups[key].groups[item.groupName]) timeGroups[key].groups[item.groupName] = [];
-                timeGroups[key].groups[item.groupName].push(item);
-            });
+    if (!data || data.length === 0) { list.innerHTML = "找不到資料"; return; }
+    
+    // --- 關鍵修正：處理合併儲存格導致的姓名空白問題 ---
+    let lastRealName = "";
+    let lastRealPay = "";
+    let lastRealDeposit = "";
+    let lastRealDate = "";
 
-            for (let k in timeGroups) {
-                const tg = timeGroups[k];
-                const tagColor = payColorMap[tg.pay.split('(')[0]] || "#ADC2D3";
-                let subTotal = 0;
-                for (let gName in tg.groups) tg.groups[gName].forEach(i => subTotal += (parseInt(i.price) || 0));
-                
-                const isSearchingName = (tg.name === keyword);
-
-                html += `<div class="result-group" id="group-${tg.rowIndex}" data-sheet="${tg.sheetName}">
-                    <div class="user-header">
-                        <div style="display:flex; align-items:center;">
-                            <span class="result-tag" style="background:${tagColor}">${tg.pay || '未填'}</span>
-                            <span style="font-size:11px; font-weight:bold; margin:0 8px;">${tg.orderDate}</span>
-                            ${isSearchingName ? '' : `<span class="link-text" onclick="quickTrigger('${tg.name}')" style="font-weight:bold;">${tg.name}</span>`}
-                        </div>
-                        <div style="font-weight:bold;">$${subTotal} <span style="font-size:11px; color:#FB9E09;">(訂:${tg.deposit||0})</span></div>
-                    </div><div class="items-container">`;
-                
-                for (let gName in tg.groups) {
-                    const isSearchingGroup = (gName === keyword);
-                    if (!isSearchingGroup) {
-                        html += `<span class="group-title" onclick="quickTrigger('${gName}')">${gName}</span>`;
-                    }
-                    html += tg.groups[gName].map(i => `<div class="item-line" style="margin:2px 0;"><span>${i.name}</span><span>$${i.price}</span></div>`).join('');
-                }
-                html += `</div></div>`;
-            }
-            list.innerHTML = html;
+    // 第一次遍歷：修復空白欄位
+    const fixedData = data.map(item => {
+        if (item.lineName && item.lineName.trim() !== "") {
+            lastRealName = item.lineName;
+            lastRealPay = item.payMethod;
+            lastRealDeposit = item.deposit;
+            lastRealDate = item.orderDate;
         }
+        return {
+            ...item,
+            lineName: lastRealName,
+            payMethod: lastRealPay,
+            deposit: lastRealDeposit,
+            orderDate: lastRealDate
+        };
+    });
+
+    // 過濾出符合關鍵字的資料 (因為修復了姓名，現在每一筆都能被搜到)
+    const filteredData = fixedData.filter(item => {
+        const searchKey = keyword.toLowerCase();
+        return item.lineName.toLowerCase().includes(searchKey) || 
+               item.groupName.toLowerCase().includes(searchKey);
+    });
+
+    if (filteredData.length === 0) { list.innerHTML = "找不到相關資料"; return; }
+
+    let html = `<div style="font-weight:bold; margin-bottom:10px; border-bottom:2px solid var(--accent); padding-bottom:5px;">${keyword} 的訂單 (${filteredData.length} 筆)</div>`;
+    
+    const timeGroups = {};
+    filteredData.forEach(item => {
+        // 使用 姓名+日期+付款方式 作為群組 Key，確保合併顯示
+        const key = `${item.lineName}_${item.orderDate}_${item.payMethod}`; 
+        if (!timeGroups[key]) {
+            timeGroups[key] = { 
+                name: item.lineName, 
+                pay: item.payMethod || "", 
+                deposit: item.deposit, 
+                orderDate: item.orderDate, 
+                rowIndex: item.rowIndex, 
+                sheetName: item.sheetName, 
+                groups: {} 
+            };
+        }
+        if (!timeGroups[key].groups[item.groupName]) timeGroups[key].groups[item.groupName] = [];
+        timeGroups[key].groups[item.groupName].push(item);
+    });
+
+    for (let k in timeGroups) {
+        const tg = timeGroups[k];
+        const tagColor = payColorMap[tg.pay.split('(')[0]] || "#ADC2D3";
+        let subTotal = 0;
+        for (let gName in tg.groups) tg.groups[gName].forEach(i => subTotal += (parseInt(i.price) || 0));
+        
+        const isSearchingName = (tg.name.toLowerCase() === keyword.toLowerCase());
+
+        html += `<div class="result-group" id="group-${tg.rowIndex}" data-sheet="${tg.sheetName}">
+            <div class="user-header">
+                <div style="display:flex; align-items:center;">
+                    <span class="result-tag" style="background:${tagColor}">${tg.pay || '未填'}</span>
+                    <span style="font-size:11px; font-weight:bold; margin:0 8px;">${tg.orderDate}</span>
+                    ${isSearchingName ? `<span style="font-weight:bold;">${tg.name}</span>` : `<span class="link-text" onclick="quickTrigger('${tg.name}')" style="font-weight:bold;">${tg.name}</span>`}
+                </div>
+                <div style="font-weight:bold;">$${subTotal} <span style="font-size:11px; color:#FB9E09;">(訂:${tg.deposit||0})</span></div>
+            </div><div class="items-container">`;
+        
+        for (let gName in tg.groups) {
+            if (gName !== "無" && gName !== keyword) {
+                html += `<span class="group-title" onclick="quickTrigger('${gName}')">${gName}</span>`;
+            }
+            html += tg.groups[gName].map(i => `<div class="item-line" style="margin:2px 0;"><span>${i.name}</span><span>$${i.price}</span></div>`).join('');
+        }
+        html += `</div></div>`;
+    }
+    list.innerHTML = html;
+}
 
         async function fetchRecentRecords() {
             const list = document.getElementById('record-list');
