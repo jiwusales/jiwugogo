@@ -175,14 +175,13 @@
             const lastPage = localStorage.getItem('last_active_page') || 'add';
             switchPage(lastPage, document.getElementById('nav-' + lastPage));
             
-            // 從本地快取讀取 IP 列表，避免重新整理時消失
             const cachedIPs = localStorage.getItem('cached_ip_list');
             if (cachedIPs) {
                 ipList = JSON.parse(cachedIPs);
                 renderIPButtons();
             }
             
-            fetchIPs(); // 靜默更新最新 IP
+            fetchIPs();
             renderModalPaySelector();
         }
 
@@ -191,8 +190,10 @@
                 const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "getIPs" }) });
                 const data = await response.json();
                 if (Array.isArray(data)) { 
+                    // 預期後端回傳格式為 [{name: "Sakamoto", count: 10}, ...]
+                    // 如果後端只給字串陣列，排序功能將依賴前端點擊紀錄或後端更新
                     ipList = data; 
-                    localStorage.setItem('cached_ip_list', JSON.stringify(data)); // 更新快取
+                    localStorage.setItem('cached_ip_list', JSON.stringify(data));
                     renderIPButtons(); 
                 }
             } catch (e) { console.error(e); }
@@ -200,8 +201,20 @@
 
         function renderIPButtons() {
             const container = document.getElementById('ip-buttons');
+            
+            // 排序邏輯：若物件包含 count 則按次數排，否則按字母
+            let sortedList = [...ipList].sort((a, b) => {
+                if (typeof a === 'object' && a.count !== undefined) {
+                    return b.count - a.count;
+                }
+                return 0; 
+            });
+
             container.innerHTML = `<button class="btn-small ${selectedIP === '多團' ? 'active' : ''}" onclick="setIP('多團')">自動辨識</button>` + 
-                ipList.map(ip => `<button class="btn-small ${ip === selectedIP ? 'active' : ''}" onclick="setIP('${ip}')">${ip}</button>`).join('');
+                sortedList.map(ip => {
+                    const name = typeof ip === 'object' ? ip.name : ip;
+                    return `<button class="btn-small ${name === selectedIP ? 'active' : ''}" onclick="setIP('${name}')">${name}</button>`;
+                }).join('');
         }
 
         function renderModalPaySelector() {
@@ -311,6 +324,8 @@
             try {
                 await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "addOrder", data: currentParsedData }) });
                 alert("登記成功！"); document.getElementById('quick-input').value = ""; closeModal();
+                // 成功後重新抓取 IP 以反映最新的出現次數
+                fetchIPs();
             } catch (e) { alert("提交失敗"); }
             finally { btn.disabled = false; btn.innerText = "確認並寫入"; }
         }
