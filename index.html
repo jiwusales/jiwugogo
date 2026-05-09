@@ -378,8 +378,11 @@
 
             const filteredData = fixedData.filter(item => {
                 const searchKey = keyword.toLowerCase();
-                return item.lineName.toLowerCase().includes(searchKey) || 
-                       item.groupName.toLowerCase().includes(searchKey);
+                const name = item.lineName.toLowerCase();
+                const group = item.groupName.toLowerCase();
+                // 如果搜尋詞完全等於顧客姓名，則只顯示該姓名。否則維持團名包含搜尋。
+                if (name === searchKey) return true;
+                return group.includes(searchKey);
             });
 
             if (filteredData.length === 0) { list.innerHTML = "找不到相關資料"; return; }
