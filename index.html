@@ -201,13 +201,8 @@
             const container = document.getElementById('ip-buttons');
             const priorityOrder = ["吉伊卡哇", "白熊", "三麗鷗", "寶可夢"];
             
-            // 提取純名稱清單
             let allNames = ipList.map(ip => (typeof ip === 'object' ? ip.name : ip));
-            
-            // 找出在 priorityOrder 之外的其他 IP
             let others = allNames.filter(name => !priorityOrder.includes(name));
-            
-            // 合併：優先順序 + 其他隨意排
             let finalOrder = priorityOrder.filter(name => allNames.includes(name)).concat(others);
 
             container.innerHTML = `<button class="btn-small ${selectedIP === '多團' ? 'active' : ''}" onclick="setIP('多團')">自動辨識</button>` + 
@@ -263,7 +258,17 @@
                 }
             }
 
-            currentParsedData = { customerName, products, total, type: (selectedSheetType === '現貨' ? '線上' : selectedSheetType), ip: selectedIP, deposit: "", payMethod: "" };
+            // 修改邏輯：如果選擇「現貨」，則 type 強制設為「線上」，並額外傳入 status: "現貨"
+            currentParsedData = { 
+                customerName, 
+                products, 
+                total, 
+                type: (selectedSheetType === '現貨' ? '線上' : selectedSheetType), 
+                status: (selectedSheetType === '現貨' ? '現貨' : '預購中'),
+                ip: selectedIP, 
+                deposit: "", 
+                payMethod: "" 
+            };
             
             let detailHtml = `<div style="background:#f9f9f9; padding:10px; border-radius:10px; margin-bottom:10px; font-size:13px;"><b>顧客：</b>${customerName}<br><b>來源：</b>${selectedSheetType}</div><div class="items-container" style="border:none; margin:0; padding:0;">`;
             products.forEach(item => {
