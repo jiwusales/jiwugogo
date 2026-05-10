@@ -153,14 +153,14 @@
         <div id="page-record" class="page">
             <div class="header-wrapper"><div class="header">訂購管理</div></div>
             <div class="card">
-                <div style="font-weight:bold; color:var(--highlight); margin-bottom:10px;">✨ 訂購登記</div>
-                <label>快速輸入 (時間 / 編號 / 品項)</label>
-                <textarea id="order-mgr-input" rows="6" placeholder="0509&#10;487052462&#10;吊娃5、娃3、鑰匙圈2、杯墊1..." onkeydown="handleOrderMgrKey(event)"></textarea>
+                <div style="font-weight:bold; color:var(--highlight); margin-bottom:10px;">下單登記</div>
+                <label>快速輸入(時間、編號、內容)</label>
+                <textarea id="order-mgr-input" rows="6" placeholder=" " onkeydown="handleOrderMgrKey(event)"></textarea>
                 <button class="btn" onclick="submitOrderMgr()">確認登記</button>
             </div>
             <div class="card">
                 <div style="font-weight:bold; color:var(--highlight); margin-bottom:10px;">🔍 訂購查詢</div>
-                <input type="text" id="order-mgr-search" placeholder="日期 / 編號 / 通路" onkeydown="if(event.keyCode==13){ searchOrderMgr(); }">
+                <input type="text" id="order-mgr-search" placeholder="日期/通路/編號" onkeydown="if(event.keyCode==13){ searchOrderMgr(); }">
                 <div id="order-mgr-results"></div>
             </div>
         </div>
