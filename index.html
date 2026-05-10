@@ -392,45 +392,72 @@
         async function submitOrderMgr() {
             const rawText = document.getElementById('order-mgr-input').value.trim();
             if (!rawText) return;
-            const lines = rawText.split('\n').map(l => l.trim()).filter(l => l !== "");
-            if (lines.length < 2) return alert("請輸入完整資訊（日期、編號、品項）");
-
-            const date = lines[0];
-            const orderNo = lines[1];
-            const contentLine = lines.slice(2).join('、'); 
             
-            let diaowa = 0, wa = 0, key = 0, others = [];
+            // 拆分每一行
+            const lines = rawText.split('\n').map(l => l.trim()).filter(l => l !== "");
+            if (lines.length < 4) return alert("請輸入完整資訊（日期、編號、IP、內容、備註）");
+
+            const date = lines[0];      // 0510 -> A欄
+            const orderNo = lines[1];   // 1864537843 -> C欄
+            const ipName = lines[2];    // 寶可夢 -> B欄
+            const contentLine = lines[3]; // 吊娃5、娃3... -> 拆分到 I, J, K, L
+            const note = lines[4] || "";  // 受注5月 -> M欄
+
+            // 初始化數量（設為空字串，若沒匹配到則不填0）
+            let diaowa = "", wa = "", key = "", others = [];
+            
+            // 處理內容行
             const items = contentLine.split(/[、，, ]+/);
             items.forEach(item => {
                 const numMatch = item.match(/\d+/);
-                const num = numMatch ? parseInt(numMatch[0]) : 1;
-                if (item.includes("吊娃")) diaowa = num;
-                else if (item.includes("鑰匙圈")) key = num;
-                else if (item.includes("娃")) wa = num;
-                else others.push(item);
+                const num = numMatch ? numMatch[0] : "";
+                
+                if (item.includes("吊娃")) {
+                    diaowa = num;
+                } else if (item.includes("鑰匙圈")) {
+                    key = num;
+                } else if (item.includes("娃") && !item.includes("吊娃")) {
+                    // 這裡用了排除法，確保「吊娃」不會被誤判為「娃」
+                    wa = num;
+                } else if (item.trim() !== "") {
+                    others.push(item);
+                }
             });
 
+            // 判斷通路 (保留你原本的邏輯)
             const channel = (orderNo.startsWith('48') || orderNo.startsWith('m')) ? 'Mercari' : '通路A';
 
             const payload = {
                 action: "addOrderRecord",
                 data: {
-                    date: date,
+                    date: date,           // A
+                    ipName: ipName,       // B
+                    orderNo: orderNo,     // C
                     channel: channel,
-                    orderNo: orderNo,
-                    diaowa: diaowa,
-                    wa: wa,
-                    key: key,
-                    others: others.join('、'),
-                    note: lines[lines.length-1] || ""
+                    diaowa: diaowa,       // I
+                    wa: wa,               // J
+                    key: key,             // K
+                    others: others.join('、'), // L
+                    note: note            // M
                 }
             };
 
             try {
+                const btn = event.target;
+                btn.disabled = true;
+                btn.innerText = "傳送中...";
+                
                 await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+                
                 alert("登記成功！");
                 document.getElementById('order-mgr-input').value = "";
-            } catch (e) { alert("登記失敗"); }
+            } catch (e) { 
+                alert("登記失敗"); 
+            } finally {
+                const btn = document.querySelector("#page-record .btn");
+                btn.disabled = false;
+                btn.innerText = "確認登記";
+            }
         }
 
         async function searchOrderMgr() {
