@@ -390,76 +390,68 @@
         function quickTrigger(val) { document.getElementById('quick-search-input').value = val; searchOrders(); }
 
         async function submitOrderMgr() {
-            const rawText = document.getElementById('order-mgr-input').value.trim();
-            if (!rawText) return;
-            
-            const lines = rawText.split('\n').map(l => l.trim()).filter(l => l !== "");
-            if (lines.length < 3) return alert("請輸入完整資訊（日期通路、編號日幣、內容）");
+    const rawText = document.getElementById('order-mgr-input').value.trim();
+    if (!rawText) return;
+    
+    const lines = rawText.split('\n').map(l => l.trim()).filter(l => l !== "");
+    // 基本檢查：至少要有日期通路、編號、日幣、內容
+    if (lines.length < 4) return alert("格式：\n1.日期通路\n2.編號\n3.日幣\n4.內容\n5.備註(選填)");
 
-            // --- 第一行：日期(A) + 通路(B) ---
-            // 匹配 前 4 位數字為日期，後面剩餘為通路
-            const line1 = lines[0];
-            const date = line1.substring(0, 4); // 0510
-            const channel = line1.substring(4).trim(); // 吉伊卡哇
+    // --- 第一行：日期(A) + 通路(B) ---
+    const line1 = lines[0];
+    const date = line1.substring(0, 4);
+    const channel = line1.substring(4).trim();
 
-            // --- 第二行：編號(C) + 日幣(E) ---
-            const line2 = lines[1].split(/\s+/);
-            const orderNo = line2[0] || ""; // 198463154632
-            const jpyPrice = line2[1] || ""; // 11200
+    // --- 第二行：編號(C) ---
+    const orderNo = lines[1];
 
-            // --- 第三行：內容拆分 ---
-            const contentLine = lines[2];
-            let diaowa = "", wa = "", key = "", others = [];
-            
-            const items = contentLine.split(/[、，, ]+/);
-            items.forEach(item => {
-                const numMatch = item.match(/\d+/);
-                const num = numMatch ? numMatch[0] : "";
-                
-                if (item.includes("吊娃")) {
-                    diaowa = num;
-                } else if (item.includes("鑰匙圈")) {
-                    key = num;
-                } else if (item.includes("娃") && !item.includes("吊娃")) {
-                    wa = num;
-                } else if (item.trim() !== "") {
-                    others.push(item);
-                }
-            });
+    // --- 第三行：日幣(E) ---
+    const jpyPrice = lines[2];
 
-            // --- 備註(M) ---
-            const note = lines[3] || "";
+    // --- 第四行：內容拆分 ---
+    const contentLine = lines[3];
+    let diaowa = "", wa = "", key = "", others = [];
+    const items = contentLine.split(/[、，, ]+/);
+    items.forEach(item => {
+        const numMatch = item.match(/\d+/);
+        const num = numMatch ? numMatch[0] : "";
+        if (item.includes("吊娃")) { diaowa = num; } 
+        else if (item.includes("鑰匙圈")) { key = num; } 
+        else if (item.includes("娃") && !item.includes("吊娃")) { wa = num; } 
+        else if (item.trim() !== "") { others.push(item); }
+    });
 
-            const payload = {
-                action: "addOrderRecord",
-                data: {
-                    date: date,           // A
-                    channel: channel,     // B
-                    orderNo: orderNo,     // C
-                    jpyPrice: jpyPrice,   // E
-                    diaowa: diaowa,       // I
-                    wa: wa,               // J
-                    key: key,             // K
-                    others: others.join('、'), // L
-                    note: note            // M
-                }
-            };
+    // --- 第五行：備註(M) ---
+    const note = lines[4] || "";
 
-            try {
-                const btn = event.target;
-                btn.disabled = true;
-                btn.innerText = "傳送中...";
-                await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
-                alert("登記成功！");
-                document.getElementById('order-mgr-input').value = "";
-            } catch (e) { 
-                alert("登記失敗"); 
-            } finally {
-                const btn = document.querySelector("#page-record .btn");
-                btn.disabled = false;
-                btn.innerText = "確認登記";
-            }
+    const payload = {
+        action: "addOrderRecord",
+        data: {
+            date: date,
+            channel: channel,
+            orderNo: orderNo,
+            jpyPrice: jpyPrice,
+            diaowa: diaowa,
+            wa: wa,
+            key: key,
+            others: others.join('、'),
+            note: note
         }
+    };
+
+    try {
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerText = "傳送中...";
+        await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+        alert("登記成功！");
+        document.getElementById('order-mgr-input').value = "";
+    } catch (e) { alert("登記失敗"); } finally {
+        const btn = document.querySelector("#page-record .btn");
+        btn.disabled = false;
+        btn.innerText = "確認登記";
+    }
+}
 
         async function searchOrderMgr() {
             const kw = document.getElementById('order-mgr-search').value.trim();
