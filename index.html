@@ -68,7 +68,7 @@
         }
 
         label { font-weight: bold; font-size: 12px; margin-top: 8px; display: block; color: var(--highlight); }
-        .ip-group { display: none; }
+        .ip-group { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
 
         .filter-group { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 15px 0; }
         .filter-btn { padding: 6px 12px; border-radius: 8px; font-size: 12px; background: var(--accent); border: none; color: var(--text); cursor: pointer; transition: 0.2s; }
@@ -85,8 +85,6 @@
         .status-tag { display: inline-block; padding: 4px 8px; border-radius: 8px; font-size: 11px; color: white; font-weight: bold; cursor: pointer; margin-right: 5px; white-space: nowrap; }
         .status-options { display: flex; gap: 4px; margin-top: 5px; padding: 5px; background: #f0f0f0; border-radius: 8px; }
 
-        .status-header { background: #F5EBE0; padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; margin-top: 15px; color: #74512D; }
-        
         .link-text { cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
         .hidden { display: none !important; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); z-index: 2000; display: flex; align-items: center; justify-content: center; }
@@ -107,26 +105,22 @@
 
         /* 訂購管理專用樣式 */
         .mgr-item-card { background: #fff; border-bottom: 1px solid #eee; padding: 15px 5px; font-size: 13px; line-height: 1.4; }
-        .mgr-tag { padding: 3px 8px; border-radius: 6px; font-size: 11px; color: white; font-weight: bold; cursor: pointer; }
-        .mgr-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
-        .mgr-col-left { display: flex; flex-direction: column; gap: 3px; flex: 1; }
-        .mgr-col-right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; min-width: 80px; }
-        .mgr-inline-input { margin: 8px 0; display: flex; gap: 5px; background: #f9f9f9; padding: 8px; border-radius: 8px; }
-        .mgr-inline-input input { padding: 8px; font-size: 14px; margin: 0; flex: 1; height: 35px; }
-        .mgr-inline-input .btn-small { height: 35px; margin: 0; }
+        .mgr-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .mgr-date { font-weight: bold; color: var(--highlight); font-size: 14px; }
+        .mgr-channel { background: var(--accent); color: var(--title-color); padding: 2px 8px; border-radius: 6px; font-size: 11px; }
+        .mgr-no { color: #888; font-size: 12px; margin-bottom: 8px; }
+        .mgr-price { color: #d9534f; font-weight: bold; }
+        .mgr-content { background: #fcfcfc; border-left: 3px solid var(--primary); padding: 8px; margin: 5px 0; border-radius: 4px; }
     </style>
 </head>
 <body onload="initApp()">
 
     <div class="container">
-        <!-- 頁面：訂單登記 -->
         <div id="page-add" class="page active">
             <div class="header-wrapper"><div class="header">訂單登記</div></div>
             <div class="card">
-                <div class="ip-group" id="ip-buttons">
-                    <button class="btn-small active" onclick="setIP('多團')">自動辨識</button>
-                </div>
-                <input type="text" id="other-ip-input" class="hidden" placeholder="輸入IP名稱" autocomplete="off">
+                <label>IP 分類</label>
+                <div class="ip-group" id="ip-buttons"></div>
                 <label>訂單來源</label>
                 <div class="type-group">
                     <div class="type-item active" onclick="setSheetType('線上', this)">線上</div>
@@ -134,12 +128,11 @@
                     <div class="type-item" onclick="setSheetType('現貨', this)">現貨</div>
                 </div>
                 <label>快速輸入 (姓名 + 訂單內容)</label>
-                <textarea id="quick-input" rows="8" placeholder="第一行要輸入姓名唷 ദ്ദി( ¯꒳¯ ) " autocomplete="off" onkeydown="if(event.keyCode==13 && (event.ctrlKey || event.metaKey)){ event.preventDefault(); parseAndConfirm(); }"></textarea>
+                <textarea id="quick-input" rows="8" placeholder="第一行要輸入姓名唷 ദ്ദി( ¯꒳¯ ) " autocomplete="off"></textarea>
                 <button class="btn" onclick="parseAndConfirm()">內容確認</button>
             </div>
         </div>
 
-        <!-- 頁面：訂單查詢 -->
         <div id="page-search" class="page">
             <div class="header-wrapper"><div class="header">訂單查詢</div></div>
             <div class="card">
@@ -152,8 +145,8 @@
                 </div>
                 <label>輸入團名或姓名</label>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="text" id="quick-search-input" placeholder=" " style="margin: 0; flex: 1;" autocomplete="off" onkeydown="if(event.keyCode==13){ searchOrders(); }">
-                    <button class="btn" id="btn-search-exec" onclick="searchOrders()" style="width: 80px; margin: 0;">搜尋</button>
+                    <input type="text" id="quick-search-input" placeholder=" " style="margin: 0; flex: 1;" autocomplete="off">
+                    <button class="btn" onclick="searchOrders()" style="width: 80px; margin: 0;">搜尋</button>
                 </div>
             </div>
             <div id="search-results" class="card hidden">
@@ -161,31 +154,28 @@
             </div>
         </div>
 
-        <!-- 頁面：訂購管理 -->
         <div id="page-record" class="page">
             <div class="header-wrapper"><div class="header">訂購管理</div></div>
             <div class="card">
                 <div style="font-weight:bold; color:var(--highlight); margin-bottom:10px;">下單登記</div>
-                <label>快速輸入(時間、編號、內容)</label>
-                <textarea id="order-mgr-input" rows="6" placeholder=" "></textarea>
+                <label>快速輸入 (時間/通路、編號、日幣、內容、備註)</label>
+                <textarea id="order-mgr-input" rows="6" placeholder="0510日本官網&#10;訂單編號12345&#10;15000&#10;吊娃*2、娃*1&#10;可拆售"></textarea>
                 <button class="btn" onclick="submitOrderMgr()">確認登記</button>
             </div>
             <div class="card">
                 <div style="font-weight:bold; color:var(--highlight); margin-bottom:10px;">🔍 訂購查詢</div>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="text" id="order-mgr-search" placeholder="日期/通路/編號" style="margin: 0; flex: 1;" onkeydown="if(event.keyCode==13){ searchOrderMgr(); }">
+                    <input type="text" id="order-mgr-search" placeholder="日期/通路/編號" style="margin: 0; flex: 1;">
                     <button class="btn" onclick="searchOrderMgr()" style="width: 80px; margin: 0;">搜尋</button>
                 </div>
                 <div id="order-mgr-results" style="margin-top: 15px;"></div>
             </div>
         </div>
 
-        <!-- 其他頁面 -->
         <div id="page-inventory" class="page"><div class="header-wrapper"><div class="header">庫存點名</div></div><div class="card">功能開發中...</div></div>
         <div id="page-shipping" class="page"><div class="header-wrapper"><div class="header">出貨區</div></div><div class="card">功能開發中...</div></div>
     </div>
 
-    <!-- 確認視窗 -->
     <div id="confirm-modal" class="modal-overlay hidden">
         <div class="confirm-card">
             <div class="header" style="margin: 0 0 5px 0; text-align: center;">確認訂單內容</div>
@@ -195,15 +185,15 @@
                 <label style="margin:0;">付款方式</label>
                 <div id="modal-pay-selector" class="pay-selector-direct"></div>
                 <div id="modal-bank-input" class="hidden" style="margin-top:10px; background: #fdfdfd; padding: 10px; border-radius: 10px; border: 1px dashed var(--accent);">
-                    <div style="font-size: 12px; margin-bottom: 5px; color: var(--highlight);" id="bank-input-label"></div>
+                    <div style="font-size: 12px; margin-bottom: 5px; color: var(--highlight);" id="bank-input-label">匯款後五碼：</div>
                     <div style="display: flex; gap: 5px;">
-                        <input type="text" placeholder="輸入後五碼" id="modal-code" style="padding:8px; margin:0; flex: 1; font-size:14px;" autocomplete="off" onkeydown="if(event.keyCode==13){ confirmModalBank(); }">
+                        <input type="text" placeholder="輸入後五碼" id="modal-code" style="padding:8px; margin:0; flex: 1; font-size:14px;">
                         <button class="btn-small active" onclick="confirmModalBank()" style="margin:0; padding: 0 15px;">確認</button>
                     </div>
                 </div>
                 <div style="margin-top: 15px;">
                     <label style="margin:0;">訂金</label>
-                    <input type="number" id="modal-deposit" class="deposit-input" placeholder="請輸入金額" onkeydown="if(event.keyCode==13){ finalSubmit(); }">
+                    <input type="number" id="modal-deposit" class="deposit-input" placeholder="請輸入金額">
                 </div>
             </div>
             <div style="margin-top: 20px; display: flex; gap: 10px;">
@@ -213,7 +203,6 @@
         </div>
     </div>
 
-    <!-- 底部導航 -->
     <div class="bottom-nav">
         <div class="nav-item" id="nav-add" onclick="switchPage('add', this)"><span>訂單登記</span></div>
         <div class="nav-item" id="nav-search" onclick="switchPage('search', this)"><span>訂單查詢</span></div>
@@ -313,7 +302,6 @@
             if (method === '中信' || method === 'LBank') {
                 const bankInput = document.getElementById('modal-bank-input');
                 bankInput.classList.remove('hidden');
-                document.getElementById('bank-input-label').innerText = `匯款後五碼：`;
                 bankInput.dataset.method = method;
             } else { updateModalPayDisplay(method); document.getElementById('modal-bank-input').classList.add('hidden'); }
         }
@@ -389,7 +377,7 @@
                 let subTotal = 0;
                 for (let gName in tg.groups) tg.groups[gName].forEach(i => subTotal += (parseInt(i.price) || 0));
                 const isSearchingName = (tg.name.toLowerCase() === keyword.toLowerCase());
-                html += `<div class="result-group"><div class="user-header"><div style="display:flex; align-items:center;"><span class="result-tag" style="background:${tagColor}">${tg.pay || '未填'}</span><span style="font-size:11px; font-weight:bold; margin:0 8px;">${tg.orderDate} <span style="color:#989FC0; font-weight:normal;">| ${tg.payDate}</span></span>${isSearchingName ? '' : `<span class="link-text" onclick="quickTrigger('${tg.name}')" style="font-weight:bold;">${tg.name}</span>`}</div><div style="font-weight:bold;">$${subTotal} <span style="font-size:11px; color:#FB9E09;">（訂金：${tg.deposit||0}）</span></div></div><div class="items-container">`;
+                html += `<div class="result-group"><div class="user-header"><div style="display:flex; align-items:center;"><span class="result-tag" style="background:${tagColor}">${tg.pay || '未填'}</span><span style="font-size:11px; font-weight:bold; margin:0 8px;">${tg.orderDate}</span>${isSearchingName ? '' : `<span class="link-text" onclick="quickTrigger('${tg.name}')" style="font-weight:bold;">${tg.name}</span>`}</div><div style="font-weight:bold;">$${subTotal} <span style="font-size:11px; color:#FB9E09;">（訂金：${tg.deposit||0}）</span></div></div><div class="items-container">`;
                 for (let gName in tg.groups) {
                     if (gName !== "無" && gName !== keyword) html += `<span class="group-title" onclick="quickTrigger('${gName}')">${gName}</span>`;
                     html += tg.groups[gName].map(i => {
@@ -413,20 +401,19 @@
                 const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "updateStatus", sheetName, rowIndex, status: nextStatus }) });
                 const result = await response.json();
                 if (result.success) { tag.innerText = nextStatus; tag.style.backgroundColor = statusColorMap[nextStatus]; } 
-                else { alert("更新失敗：" + result.message); tag.innerText = oldStatus; tag.style.backgroundColor = statusColorMap[oldStatus]; }
-            } catch (e) { alert("網路錯誤"); tag.innerText = oldStatus; tag.style.backgroundColor = statusColorMap[oldStatus]; } 
+                else { alert("更新失敗"); tag.innerText = oldStatus; }
+            } catch (e) { alert("網路錯誤"); tag.innerText = oldStatus; } 
             finally { tag.style.opacity = "1"; }
         }
 
         function quickTrigger(val) { document.getElementById('quick-search-input').value = val; searchOrders(); }
 
-        // --- 訂購管理相關函數 ---
-
+        // --- 訂購管理相關 ---
         async function submitOrderMgr() {
             const rawText = document.getElementById('order-mgr-input').value.trim();
             if (!rawText) return;
             const lines = rawText.split('\n').map(l => l.trim()).filter(l => l !== "");
-            if (lines.length < 4) return alert("格式不正確");
+            if (lines.length < 4) return alert("格式：時間通路\n訂單號\n日幣\n內容\n備註(可選)");
 
             const line1 = lines[0];
             const date = line1.substring(0, 4);
@@ -435,14 +422,15 @@
             const jpyPrice = lines[2];
             const contentLine = lines[3];
             let diaowa = "", wa = "", key = "", others = [];
+            
             const items = contentLine.split(/[、，, ]+/);
             items.forEach(item => {
                 const numMatch = item.match(/\d+/);
                 const num = numMatch ? numMatch[0] : "1";
-                if (item.includes("吊娃")) { diaowa = num; } 
-                else if (item.includes("鑰匙圈")) { key = num; } 
-                else if (item.includes("娃") && !item.includes("吊娃")) { wa = num; } 
-                else if (item.trim() !== "") { others.push(item); }
+                if (item.includes("吊娃")) diaowa = num;
+                else if (item.includes("鑰匙圈")) key = num;
+                else if (item.includes("娃")) wa = num;
+                else others.push(item);
             });
             const note = lines[4] || "";
 
@@ -456,7 +444,8 @@
                 btn.disabled = true; btn.innerText = "傳送中...";
                 await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
                 alert("登記成功！"); document.getElementById('order-mgr-input').value = "";
-            } catch (e) { alert("登記失敗"); } finally {
+            } catch (e) { alert("登記失敗"); } 
+            finally { 
                 const btn = document.querySelector("#page-record .btn");
                 btn.disabled = false; btn.innerText = "確認登記";
             }
@@ -477,113 +466,26 @@
         function renderOrderMgrList(data) {
             const resDiv = document.getElementById('order-mgr-results');
             if (!data || data.length === 0) { resDiv.innerHTML = "找不到資料"; return; }
-            
-            let html = "";
-            data.forEach((item, idx) => {
-                // 清理非數字字元
-                const jpyVal = (item.jpy || "").replace(/[^0-9.]/g, "");
-                const twdVal = (item.twd || "").replace(/[^0-9.]/g, "");
-                const deliveryNo = item.deliveryNo || "";
-                const weightVal = (item.weight || "").replace(/[^0-9.]/g, "");
-                const statusColor = deliveryNo ? "#88857D" : "#FFE15E";
-
-                html += `
+            resDiv.innerHTML = data.map(item => `
                 <div class="mgr-item-card">
-                    <div class="mgr-row">
-                        <div class="mgr-col-left">
-                            <div style="display:flex; align-items:center; gap:8px;">
-                                <span class="mgr-tag" style="background:${statusColor}" onclick="showMgrInput('${idx}', 'delivery')">${deliveryNo ? '已發貨' : '待發貨'}</span>
-                                <span style="font-weight:bold; color:var(--highlight);">${item.date} ${item.channel}</span>
-                            </div>
-                            <div class="mgr-sub" style="margin-top:3px;">${item.orderNo} ｜ <span onclick="showMgrInput('${idx}', 'delivery')" style="cursor:pointer; text-decoration:underline;">${deliveryNo || ''}</span></div>
-                        </div>
-                        <div class="mgr-col-right">
-                            <span style="color:#9FABE0; font-weight:bold; cursor:pointer;" onclick="showMgrInput('${idx}', 'jpy')">${jpyVal ? '¥' + jpyVal : '¥(填寫)'}</span>
-                            <span style="color:#FB9E09; font-weight:bold; cursor:pointer;" onclick="showMgrInput('${idx}', 'twd')">${twdVal ? '$' + twdVal : '$(填寫)'}</span>
-                        </div>
+                    <div class="mgr-header">
+                        <span class="mgr-date">${item.date}</span>
+                        <span class="mgr-channel">${item.channel}</span>
                     </div>
-                    
-                    <div class="mgr-row" style="margin-top:10px;">
-                        <div class="mgr-col-left" style="color:#74512D;">
-                            <div>
-                                ${item.diaowa ? `吊娃:${item.diaowa} ` : ''}
-                                ${item.wa ? `娃:${item.wa} ` : ''}
-                                ${item.key ? `鑰匙圈:${item.key} ` : ''}
-                                ${item.others || ''}
-                            </div>
-                        </div>
-                        <div class="mgr-col-right">
-                            <span style="font-weight:bold; cursor:pointer;" onclick="showMgrInput('${idx}', 'weight')">${weightVal ? weightVal + 'kg' : '(填重量)'}</span>
-                        </div>
+                    <div class="mgr-no">單號: ${item.orderNo}</div>
+                    <div class="mgr-content">
+                        ${item.diaowa ? `吊娃: ${item.diaowa} ` : ''}
+                        ${item.wa ? `娃: ${item.wa} ` : ''}
+                        ${item.key ? `鑰匙圈: ${item.key} ` : ''}
+                        ${item.others ? `<br>其他: ${item.others}` : ''}
                     </div>
-                    
-                    <div id="mgr-input-area-${idx}" class="hidden"></div>
-                </div>`;
-            });
-            resDiv.innerHTML = html;
-        }
-
-        function showMgrInput(idx, type) {
-            // 先關閉所有其他的輸入框
-            document.querySelectorAll('[id^="mgr-input-area-"]').forEach(el => el.classList.add('hidden'));
-            
-            const area = document.getElementById(`mgr-input-area-${idx}`);
-            area.classList.remove('hidden');
-            
-            let placeholder = "";
-            let field = "";
-            if (type === 'jpy') { placeholder = "輸入日幣"; field = "E"; }
-            else if (type === 'twd') { placeholder = "輸入台幣"; field = "F"; }
-            else if (type === 'weight') { placeholder = "輸入重量(kg)"; field = "H"; }
-            else if (type === 'delivery') { placeholder = "輸入配送單號"; field = "D"; }
-
-            area.innerHTML = `
-                <div class="mgr-inline-input">
-                    <input type="text" id="mgr-input-val-${idx}" placeholder="${placeholder}" autofocus>
-                    <button class="btn-small active" onclick="updateMgrField('${idx}', '${field}', '${type}')">確認</button>
-                    <button class="btn-small" onclick="this.parentElement.parentElement.classList.add('hidden')">取消</button>
+                    <div style="display:flex; justify-content:space-between; margin-top:5px;">
+                        <span class="mgr-price">¥${item.jpyPrice}</span>
+                        <span style="font-size:11px; color:#999;">${item.note || ''}</span>
+                    </div>
                 </div>
-            `;
-            
-            // 綁定 Enter 鍵直接確認
-            document.getElementById(`mgr-input-val-${idx}`).onkeydown = function(e) {
-                if(e.keyCode == 13) updateMgrField(idx, field, type);
-            };
+            `).join('');
         }
-
-        async function updateMgrField(idx, column, type) {
-            const val = document.getElementById(`mgr-input-val-${idx}`).value.trim();
-            const btn = event.target;
-            
-            btn.disabled = true;
-            btn.innerText = "...";
-            
-            try {
-                const response = await fetch(API_URL, { 
-                    method: "POST", 
-                    body: JSON.stringify({ 
-                        action: "updateOrderRecordField", 
-                        rowIndex: idx, 
-                        column: column, 
-                        value: val 
-                    }) 
-                });
-                const result = await response.json();
-                if (result.success) {
-                    // 關鍵：立刻重新搜尋，達成「立刻顯示」的效果
-                    searchOrderMgr();
-                } else {
-                    alert("更新失敗：" + result.message);
-                    btn.disabled = false;
-                    btn.innerText = "確認";
-                }
-            } catch (e) {
-                alert("發生錯誤，請檢查網路");
-                btn.disabled = false;
-                btn.innerText = "確認";
-            }
-        }
-
     </script>
 </body>
 </html>
