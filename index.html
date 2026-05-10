@@ -160,7 +160,8 @@
             </div>
             <div class="card">
                 <div style="font-weight:bold; color:var(--highlight); margin-bottom:10px;">🔍 訂購查詢</div>
-                <input type="text" id="order-mgr-search" placeholder="日期/通路/編號">
+                <!-- 找到這一行並替換 -->
+<input type="text" id="order-mgr-search" placeholder="日期/通路/編號" onkeydown="if(event.keyCode==13){ searchOrderMgr(); }">
                 <div id="order-mgr-results"></div>
             </div>
         </div>
@@ -454,18 +455,23 @@
 }
 
         async function searchOrderMgr() {
-            const kw = document.getElementById('order-mgr-search').value.trim();
-            if (!kw) return;
-            const resDiv = document.getElementById('order-mgr-results');
-            resDiv.innerHTML = "查詢中...";
+    const kw = document.getElementById('order-mgr-search').value.trim();
+    if (!kw) return;
+    const resDiv = document.getElementById('order-mgr-results');
+    resDiv.innerHTML = "查詢中...";
 
-            try {
-                const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "queryOrderRecord", keyword: kw }) });
-                const data = await response.json();
-                renderOrderMgrList(data);
-            } catch (e) { resDiv.innerHTML = "查詢失敗"; }
-        }
-
+    try {
+        const response = await fetch(API_URL, { 
+            method: "POST", 
+            body: JSON.stringify({ action: "queryOrderRecord", keyword: kw }) 
+        });
+        const data = await response.json();
+        renderOrderMgrList(data);
+    } catch (e) { 
+        resDiv.innerHTML = "查詢失敗"; 
+    }
+}
+        
         function renderOrderMgrList(data) {
             const resDiv = document.getElementById('order-mgr-results');
             if (!data || data.length === 0) { resDiv.innerHTML = "無資料"; return; }
