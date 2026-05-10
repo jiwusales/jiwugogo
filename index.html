@@ -354,9 +354,9 @@
 
                     // 商品明細解析條件顯示 (IJKL)
                     let items = [];
-                    if (i.iCount && i.iCount != "0") items.push(`吊娃+${i.iCount}`);
-                    if (i.jCount && i.jCount != "0") items.push(`娃+${i.jCount}`);
-                    if (i.kCount && i.kCount != "0") items.push(`鑰匙圈+${i.kCount}`);
+                    if (i.iCount && i.iCount != "0") items.push(`吊娃${i.iCount}`);
+                    if (i.jCount && i.jCount != "0") items.push(`娃${i.jCount}`);
+                    if (i.kCount && i.kCount != "0") items.push(`鑰匙圈${i.kCount}`);
                     if (i.lContent && i.lContent.toString().trim() !== '') items.push(i.lContent);
                     const itemDetail = items.join('、');
 
