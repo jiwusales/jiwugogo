@@ -69,7 +69,6 @@
 
         label { font-weight: bold; font-size: 12px; margin-top: 8px; display: block; color: var(--highlight); }
         
-        /* 隱藏 IP 分類標籤 */
         .ip-group { display: none; }
 
         .filter-group { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 15px 0; }
@@ -111,7 +110,6 @@
 <body onload="initApp()">
 
     <div class="container">
-        <!-- 頁面1：訂單登記 (原代碼完全保留) -->
         <div id="page-add" class="page active">
             <div class="header-wrapper"><div class="header">訂單登記</div></div>
             <div class="card">
@@ -131,7 +129,6 @@
             </div>
         </div>
 
-        <!-- 頁面2：訂單查詢 (原代碼完全保留) -->
         <div id="page-search" class="page">
             <div class="header-wrapper"><div class="header">訂單查詢</div></div>
             <div class="card">
@@ -153,19 +150,14 @@
             </div>
         </div>
 
-        <!-- 頁面3：訂購管理 (新增與修改區域) -->
         <div id="page-record" class="page">
             <div class="header-wrapper"><div class="header">訂購管理</div></div>
-            
-            <!-- 4. 訂購登記區 -->
             <div class="card">
                 <div style="font-weight:bold; color:var(--highlight); margin-bottom:10px;">✨ 訂購登記</div>
                 <label>快速輸入 (時間 / 編號 / 品項)</label>
                 <textarea id="order-mgr-input" rows="6" placeholder="0509&#10;487052462&#10;吊娃5、娃3、鑰匙圈2、杯墊1..." onkeydown="handleOrderMgrKey(event)"></textarea>
                 <button class="btn" onclick="submitOrderMgr()">確認登記</button>
             </div>
-
-            <!-- 5. 訂購查詢區 -->
             <div class="card">
                 <div style="font-weight:bold; color:var(--highlight); margin-bottom:10px;">🔍 訂購查詢</div>
                 <input type="text" id="order-mgr-search" placeholder="日期 / 編號 / 通路" onkeydown="if(event.keyCode==13){ searchOrderMgr(); }">
@@ -173,12 +165,10 @@
             </div>
         </div>
 
-        <!-- 其他功能區 -->
         <div id="page-inventory" class="page"><div class="header-wrapper"><div class="header">庫存點名</div></div><div class="card">功能開發中...</div></div>
         <div id="page-shipping" class="page"><div class="header-wrapper"><div class="header">出貨區</div></div><div class="card">功能開發中...</div></div>
     </div>
 
-    <!-- 內容確認視窗 (原代碼完全保留) -->
     <div id="confirm-modal" class="modal-overlay hidden">
         <div class="confirm-card">
             <div class="header" style="margin: 0 0 5px 0; text-align: center;">確認訂單內容</div>
@@ -206,7 +196,6 @@
         </div>
     </div>
 
-    <!-- 底部導覽 -->
     <div class="bottom-nav">
         <div class="nav-item" id="nav-add" onclick="switchPage('add', this)"><span>訂單登記</span></div>
         <div class="nav-item" id="nav-search" onclick="switchPage('search', this)"><span>訂單查詢</span></div>
@@ -219,8 +208,11 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbzEaZqaGT4HU2sWDUIiBLQ2TljlaW4YCeupcd_yVf0AlboFATxXSKpkwUwfUWbTuovGKA/exec";
         let ipList = []; let selectedIP = "多團"; let selectedSheetType = "線上"; let currentParsedData = null;
         let currentSearchStatusFilter = "";
-        const payColorMap = { "中信": "#599D9C", "LPay": "#00B900", "現金": "#FDD55E", "無卡": "#ADC2D3", "LBank": "#1E77BD", "IPass": "#F09163" };
-        const paymentOptions = ['中信', 'LBank', 'LPay', 'IPass', '無卡', '現金'];
+        
+        // 更新付款方式顏色
+        const payColorMap = { "中信": "#599D9C", "LPay": "#00B900", "現金": "#FDD55E", "無卡": "#ADC2D3", "LBank": "#1E77BD", "IPass": "#F09163", "貨付": "#F4B9B8" };
+        const paymentOptions = ['中信', 'LBank', 'LPay', 'IPass', '無卡', '現金', '貨付'];
+        
         const statusColorMap = { "預購": "#DEBAD6", "現貨": "#FFE15E", "已出貨": "#88857D" };
 
         function initApp() {
@@ -231,7 +223,6 @@
             fetchIPs(); renderModalPaySelector();
         }
 
-        /* --- 原有功能函數 (完全保留) --- */
         async function fetchIPs() {
             try {
                 const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "getIPs" }) });
@@ -400,10 +391,7 @@
         }
         function quickTrigger(val) { document.getElementById('quick-search-input').value = val; searchOrders(); }
 
-        /* --- 4. & 5. 訂購管理全新邏輯 --- */
         function isMobileDevice() { return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
-
-        // 4-3 電腦版 ENTER 送出，手機版換行
         function handleOrderMgrKey(e) {
             if (e.keyCode === 13 && !isMobileDevice()) {
                 e.preventDefault();
@@ -411,18 +399,16 @@
             }
         }
 
-        // 4-1 & 4-2 解析與寫入
         async function submitOrderMgr() {
             const rawText = document.getElementById('order-mgr-input').value.trim();
             if (!rawText) return;
             const lines = rawText.split('\n').map(l => l.trim()).filter(l => l !== "");
             if (lines.length < 2) return alert("請輸入完整資訊（日期、編號、品項）");
 
-            const date = lines[0]; // B欄
-            const orderNo = lines[1]; // D欄
+            const date = lines[0];
+            const orderNo = lines[1];
             const contentLine = lines.slice(2).join('、'); 
             
-            // 4-2 商品解析邏輯
             let diaowa = 0, wa = 0, key = 0, others = [];
             const items = contentLine.split(/[、，, ]+/);
             items.forEach(item => {
@@ -434,19 +420,19 @@
                 else others.push(item);
             });
 
-            const channel = (orderNo.startsWith('48') || orderNo.startsWith('m')) ? 'Mercari' : '通路A'; // 自動辨識邏輯
+            const channel = (orderNo.startsWith('48') || orderNo.startsWith('m')) ? 'Mercari' : '通路A';
 
             const payload = {
                 action: "addOrderRecord",
                 data: {
-                    date: date, // B
-                    channel: channel, // C
-                    orderNo: orderNo, // D
-                    diaowa: diaowa, // I
-                    wa: wa, // J
-                    key: key, // K
-                    others: others.join('、'), // L
-                    note: lines[lines.length-1] || "" // M
+                    date: date,
+                    channel: channel,
+                    orderNo: orderNo,
+                    diaowa: diaowa,
+                    wa: wa,
+                    key: key,
+                    others: others.join('、'),
+                    note: lines[lines.length-1] || ""
                 }
             };
 
@@ -457,7 +443,6 @@
             } catch (e) { alert("登記失敗"); }
         }
 
-        // 5-1 & 5-2 查詢功能
         async function searchOrderMgr() {
             const kw = document.getElementById('order-mgr-search').value.trim();
             if (!kw) return;
@@ -471,7 +456,6 @@
             } catch (e) { resDiv.innerHTML = "查詢失敗"; }
         }
 
-        // 5-3 顯示查詢結果與貨況標籤
         function renderOrderMgrList(data) {
             const resDiv = document.getElementById('order-mgr-results');
             if (!data || data.length === 0) { resDiv.innerHTML = "無資料"; return; }
@@ -486,22 +470,12 @@
                     <div style="display:flex; align-items:center; gap:10px;">
                         <span class="status-tag" style="background:${tagColor}; color:#74512D;" onclick="updateShipNoDirect('${i.orderNo}')">${tagText}</span>
                         <div style="flex:1;">
-                            <div style="font-weight:bold;">${i.orderNo}</div>
-                            <div style="font-size:11px; color:#999;">${i.date} | ${i.channel}</div>
+                            <div style="font-weight:bold; font-size:13px;">${i.orderNo}</div>
+                            <div style="font-size:11px; color:#C6AC8F;">${i.date} | ${i.channel}</div>
                         </div>
-                    </div>
-                    <div style="margin-top:8px; font-size:12px;">
-                        ${i.diaowa ? '吊娃:'+i.diaowa+' ' : ''}${i.wa ? '娃:'+i.wa+' ' : ''}${i.key ? '鑰匙圈:'+i.key+' ' : ''}${i.others}
                     </div>
                 </div>`;
             }).join('');
-        }
-
-        function updateShipNoDirect(orderNo) {
-            const shipNo = prompt("請輸入配送單號 (將回傳至D欄)：");
-            if (shipNo === null) return;
-            fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "updateShipNo", orderNo: orderNo, shipNo: shipNo }) })
-            .then(() => { alert("更新成功"); searchOrderMgr(); });
         }
     </script>
 </body>
