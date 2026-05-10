@@ -69,25 +69,24 @@
         .filter-btn.active { background: var(--highlight); color: white; font-weight: bold; }
 
         .result-group { border-bottom: 1px solid #eee; padding: 15px 0; position: relative; }
-        .items-container { border-left: 2px solid var(--accent); margin-left: 5px; padding-left: 10px; margin-top: 10px;}
-        .item-line { display: flex; align-items: center; justify-content: space-between; font-size: 13px; margin: 10px 0; gap: 10px; }
-        
         .user-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .result-tag { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; color: white; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         
         /* 訂購管理專用樣式 */
         .mgr-item-card { border-bottom: 1px solid #f0f0f0; padding: 15px 5px; background: #fff; }
-        .mgr-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-        .mgr-left { text-align: left; flex: 1; display: flex; align-items: center; gap: 6px; }
-        .mgr-right { text-align: right; white-space: nowrap; font-weight: bold; min-width: 70px; }
-        .mgr-tag { padding: 4px 8px; border-radius: 6px; font-size: 11px; color: white; font-weight: bold; cursor: pointer; }
+        .mgr-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        .mgr-left { text-align: left; flex: 1; }
+        .mgr-right { text-align: right; white-space: nowrap; font-weight: bold; min-width: 80px; }
+        .mgr-tag { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 11px; color: white; font-weight: bold; cursor: pointer; margin-bottom: 4px; }
         
-        /* 顏色定義 */
         .tag-unship { background-color: #C3D2DE; }
         .tag-warehouse { background-color: #F5B080; }
-        .price-jpy { color: #9FABE0; }
+        .price-jpy { color: #9FABE0; font-size: 15px; }
         .price-twd { color: #FB9E09; }
-        .mgr-small-input { width: 65px; padding: 4px 6px; font-size: 12px; margin: 0; border: 1px solid var(--accent); border-radius: 6px; }
+        .mgr-small-input { width: 70px; padding: 6px; font-size: 12px; margin: 0; border: 1px solid var(--accent); border-radius: 6px; }
+
+        /* 展開輸入框樣式 */
+        .ship-input-panel { margin-top: 8px; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid var(--accent); }
+        .ship-input-row { display: flex; gap: 5px; }
 
         .hidden { display: none !important; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); z-index: 2000; display: flex; align-items: center; justify-content: center; }
@@ -147,13 +146,13 @@
             <div class="header-wrapper"><div class="header">訂購管理</div></div>
             <div class="card">
                 <div style="font-weight:bold; color:var(--highlight); margin-bottom:10px;">訂購登記</div>
-                <textarea id="order-mgr-input" rows="4" placeholder=" "></textarea>
+                <textarea id="order-mgr-input" rows="4" placeholder="日期/通路/訂單編號/日幣/內容"></textarea>
                 <button class="btn" onclick="submitOrderMgr()">確認登記</button>
             </div>
             <div class="card">
                 <div style="font-weight:bold; color:var(--highlight); margin-bottom:10px;">🔍 訂購查詢</div>
                 <div style="display: flex; gap: 8px;">
-                    <input type="text" id="order-mgr-search" placeholder=" " style="margin: 0; flex: 1;">
+                    <input type="text" id="order-mgr-search" placeholder="輸入編號或內容" style="margin: 0; flex: 1;">
                     <button class="btn" onclick="searchOrderMgr()" style="width: 80px; margin: 0;">搜尋</button>
                 </div>
                 <div id="order-mgr-results" style="margin-top: 15px;"></div>
@@ -222,8 +221,14 @@
 
         function renderIPButtons() {
             const container = document.getElementById('ip-buttons');
-            container.innerHTML = `<button class="btn-small active" onclick="selectedIP='多團'">自動辨識</button>` + 
-                ipList.map(name => `<button class="btn-small" onclick="selectedIP='${name}'">${name}</button>`).join('');
+            container.innerHTML = `<button class="btn-small active" onclick="updateIPSelection('多團', this)">自動辨識</button>` + 
+                ipList.map(name => `<button class="btn-small" onclick="updateIPSelection('${name}', this)">${name}</button>`).join('');
+        }
+
+        function updateIPSelection(name, el) {
+            selectedIP = name;
+            document.querySelectorAll('#ip-buttons .btn-small').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
         }
 
         function switchPage(pageId, element) {
@@ -235,11 +240,13 @@
         }
 
         function setSheetType(val, el) { selectedSheetType = val; document.querySelectorAll('.type-item').forEach(i => i.classList.remove('active')); el.classList.add('active'); }
+        
         function renderModalPaySelector() {
             const container = document.getElementById('modal-pay-selector');
             const options = ['中信', 'LBank', 'LPay', 'IPass', '無卡', '現金', '貨付'];
             container.innerHTML = options.map(p => `<button class="pay-btn" id="modal-pay-${p}" style="background-color: ${payColorMap[p]}" onclick="selectModalPay('${p}')">${p}</button>`).join('');
         }
+
         function selectModalPay(method) {
             document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`modal-pay-${method}`).classList.add('active');
@@ -252,6 +259,7 @@
                 document.getElementById('modal-bank-input').classList.add('hidden');
             }
         }
+
         function confirmModalBank() {
             const method = document.getElementById('modal-bank-input').dataset.method;
             const code = document.getElementById('modal-code').value;
@@ -276,7 +284,7 @@
             }
             currentParsedData = { customerName, products, total, type: selectedSheetType, status: (selectedSheetType === '現貨' ? '現貨' : '預購'), ip: selectedIP, payMethod: "" };
             let detailHtml = `<div style="background:#f9f9f9; padding:10px; border-radius:10px; margin-bottom:10px;"><b>顧客：</b>${customerName}</div>`;
-            products.forEach(item => { detailHtml += `<div class="item-line"><div>${item.name} (${item.group})</div><div>$${item.price}</div></div>`; });
+            products.forEach(item => { detailHtml += `<div style="display:flex; justify-content:space-between; font-size:13px; margin:5px 0;"><div>${item.name} (${item.group})</div><div>$${item.price}</div></div>`; });
             detailHtml += `<div style="text-align:right; font-weight:bold; margin-top:10px;">總計：$${total}</div>`;
             document.getElementById('modal-ip-display').innerText = "IP 分類：" + selectedIP;
             document.getElementById('confirm-content').innerHTML = detailHtml;
@@ -301,9 +309,9 @@
             const resDiv = document.getElementById('search-results-list');
             resDiv.innerHTML = "搜尋中...";
             try {
-                const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "queryOrder", keyword: kw }) });
+                const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "queryOrder", keyword: kw, status: currentSearchStatusFilter }) });
                 const data = await response.json();
-                resDiv.innerHTML = data.map(i => `<div class="result-group">${i.name} - ${i.price} [${i.status}]</div>`).join('');
+                resDiv.innerHTML = data.map(i => `<div class="result-group"><b>${i.name}</b> - $${i.price} [${i.status}]<br><small style="color:#888;">${i.ip || ''}</small></div>`).join('');
             } catch (e) { resDiv.innerHTML = "查詢失敗"; }
         }
 
@@ -333,8 +341,16 @@
                     const isArrived = i.shipNo && i.shipNo.toString().trim() !== "";
                     const tagText = isArrived ? "到倉庫" : "未出貨";
                     const tagClass = isArrived ? "tag-warehouse" : "tag-unship";
-                    const displayShipNo = isArrived ? `(${i.shipNo})` : "";
+                    const displayShipNo = i.shipNo || '尚未輸入';
                     
+                    // 商品明細解析：吊娃(I) + 娃(J) + 鑰匙圈(K) + 完整顯示(L)
+                    let itemsHtml = [];
+                    if (i.itemI && i.itemI > 0) itemsHtml.push(`吊娃+${i.itemI}`);
+                    if (i.itemJ && i.itemJ > 0) itemsHtml.push(`娃+${i.itemJ}`);
+                    if (i.itemK && i.itemK > 0) itemsHtml.push(`鑰匙圈+${i.itemK}`);
+                    if (i.content) itemsHtml.push(i.content);
+                    const fullContent = itemsHtml.join('、');
+
                     const twdDisplay = i.twd ? `<span class="price-twd">$${i.twd}</span>` : 
                         `<input type="number" class="mgr-small-input" placeholder="台幣" onblur="updateOrderField(${i.rowIndex}, 'F', this.value)">`;
                     
@@ -345,34 +361,43 @@
                     <div class="mgr-item-card" id="mgr-row-${i.rowIndex}">
                         <div class="mgr-row">
                             <div class="mgr-left">
-                                <span class="mgr-tag ${tagClass}" onclick="updateShipNo(${i.rowIndex})">${tagText}</span>
-                                <span style="font-size:12px; color:#888;">${i.date || ''} ${i.channel || ''}</span>
-                                <span style="font-weight:bold;">${i.orderNo || ''} <small class="ship-no-label">${displayShipNo}</small></span>
+                                <span class="mgr-tag ${tagClass}" onclick="toggleShipInput(${i.rowIndex})">${tagText}</span>
+                                <div style="font-size:11px; color:#999; margin-bottom:2px;">${i.date || ''} ${i.channel || ''}</div>
+                                <div style="font-weight:bold; font-size:13px;">編號：${i.orderNo || ''}</div>
+                                <div style="font-size:12px; color:var(--highlight);">配送：${displayShipNo}</div>
+                                <div id="ship-panel-${i.rowIndex}" class="ship-input-panel hidden">
+                                    <div class="ship-input-row">
+                                        <input type="text" id="ship-val-${i.rowIndex}" placeholder="輸入單號" style="margin:0; padding:6px; font-size:13px;">
+                                        <button class="btn-small active" onclick="doUpdateShipNo(${i.rowIndex})" style="margin:0;">送出</button>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="mgr-right price-jpy">¥${i.jpy || 0}</div>
+                            <div class="mgr-right">
+                                <div class="price-jpy">¥${i.jpy || 0}</div>
+                                <div style="margin-top:5px;">${twdDisplay}</div>
+                                <div style="color:#888; font-size:11px; margin-top:5px;">${weightDisplay}</div>
+                            </div>
                         </div>
-                        <div class="mgr-row">
-                            <div class="mgr-left" style="color:#555;">${i.content || '無內容'}</div>
-                            <div class="mgr-right">${twdDisplay}</div>
-                        </div>
-                        <div class="mgr-row">
-                            <div class="mgr-left"></div>
-                            <div class="mgr-right" style="color:#888; font-size:11px;">${weightDisplay}</div>
+                        <div style="color:#555; font-size:13px; background:#fcfcfc; padding:8px; border-radius:6px; border:1px solid #f0f0f0;">
+                            ${fullContent || '無內容'}
                         </div>
                     </div>`;
                 }).join('');
             } catch (e) { resDiv.innerHTML = "查詢失敗"; }
         }
 
-        async function updateShipNo(rIdx) {
-            const val = prompt("請輸入配送單號：");
-            if (val === null) return;
+        function toggleShipInput(rIdx) {
+            const panel = document.getElementById(`ship-panel-${rIdx}`);
+            panel.classList.toggle('hidden');
+        }
+
+        async function doUpdateShipNo(rIdx) {
+            const val = document.getElementById(`ship-val-${rIdx}`).value.trim();
+            if (!val) return;
             const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "updateOrderRecordField", rowIndex: rIdx, column: "D", value: val }) });
             if (res.ok) {
-                const row = document.getElementById(`mgr-row-${rIdx}`);
-                const tag = row.querySelector('.mgr-tag');
-                tag.innerText = "到倉庫"; tag.className = "mgr-tag tag-warehouse";
-                row.querySelector('.ship-no-label').innerText = `(${val})`;
+                alert("更新成功");
+                searchOrderMgr(); // 重新整理列表
             }
         }
 
