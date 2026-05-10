@@ -64,6 +64,16 @@
         input:focus, textarea:focus { background: #fff !important; border-color: var(--accent) !important; outline: none !important; }
         label { font-weight: bold; font-size: 12px; margin-top: 8px; display: block; color: var(--highlight); }
 
+        /* 隱藏數字輸入框的上下箭頭 */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
         .filter-group { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 15px 0; }
         .filter-btn { padding: 6px 12px; border-radius: 8px; font-size: 12px; background: var(--accent); border: none; color: var(--text); cursor: pointer; transition: 0.2s; }
         .filter-btn.active { background: var(--highlight); color: white; font-weight: bold; }
@@ -87,7 +97,7 @@
         .tag-warehouse { background-color: #F5B080; }
         .price-jpy { color: #9FABE0; }
         .price-twd { color: #FB9E09; }
-        .mgr-small-input { width: 65px; padding: 4px 6px; font-size: 12px; margin: 0; border: 1px solid var(--accent); border-radius: 6px; }
+        .mgr-small-input { width: 65px; padding: 4px 6px; font-size: 12px; margin: 0; border: 1px solid var(--accent); border-radius: 6px; text-align: center; }
 
         .hidden { display: none !important; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); z-index: 2000; display: flex; align-items: center; justify-content: center; }
@@ -155,7 +165,7 @@
             <div class="card">
                 <div style="font-weight:bold; color:var(--highlight); margin-bottom:10px;">🔍 訂購查詢</div>
                 <div style="display: flex; gap: 8px;">
-                    <input type="text" id="order-mgr-search" placeholder=" " style="margin: 0; flex: 1;">
+                    <input type="text" id="order-mgr-search" placeholder=" " style="margin: 0; flex: 1;" onkeydown="if(event.key === 'Enter') searchOrderMgr()">
                     <button class="btn" onclick="searchOrderMgr()" style="width: 80px; margin: 0;">搜尋</button>
                 </div>
                 <div id="order-mgr-results" style="margin-top: 15px;"></div>
@@ -335,40 +345,43 @@
                     const isArrived = i.shipNo && i.shipNo.toString().trim() !== "";
                     const tagText = isArrived ? "到倉庫" : "未出貨";
                     const tagClass = isArrived ? "tag-warehouse" : "tag-unship";
-                    const displayShipNo = i.shipNo ? i.shipNo : "點擊標籤輸入單號";
                     
                     const twdDisplay = i.twd ? `<span class="price-twd">$${i.twd}</span>` : 
-                        `<input type="number" class="mgr-small-input" placeholder="台幣" onblur="updateOrderField(${i.rowIndex}, 'F', this.value)">`;
+                        `<input type="number" class="mgr-small-input" placeholder="台幣" onkeydown="if(event.key==='Enter') updateOrderField(${i.rowIndex}, 'F', this.value, this)">`;
                     
                     const weightDisplay = i.weight ? `<span>${i.weight}kg</span>` : 
-                        `<input type="number" class="mgr-small-input" placeholder="kg" onblur="updateOrderField(${i.rowIndex}, 'H', this.value)">`;
+                        `<input type="number" class="mgr-small-input" placeholder="kg" onkeydown="if(event.key==='Enter') updateOrderField(${i.rowIndex}, 'H', this.value, this)">`;
 
-                    // 商品明細解析 (IJKL)
-                    const itemDetail = `吊娃+${i.iCount || 0}、娃+${i.jCount || 0}、鑰匙圈+${i.kCount || 0}、${i.lContent || ''}`;
+                    // 商品明細解析條件顯示 (IJKL)
+                    let items = [];
+                    if (i.iCount && i.iCount != "0") items.push(`吊娃+${i.iCount}`);
+                    if (i.jCount && i.jCount != "0") items.push(`娃+${i.jCount}`);
+                    if (i.kCount && i.kCount != "0") items.push(`鑰匙圈+${i.kCount}`);
+                    if (i.lContent && i.lContent.toString().trim() !== '') items.push(i.lContent);
+                    const itemDetail = items.join('、');
 
                     return `
                     <div class="mgr-item-card" id="mgr-row-${i.rowIndex}">
                         <div class="mgr-row">
                             <div class="mgr-left">
-                                <span class="mgr-tag ${tagClass}" onclick="toggleShipInput(${i.rowIndex})">${tagText}</span>
-                                <div style="font-size:12px; color:#888; margin-top:2px;">
-                                    編號：${i.orderNo || ''}<br>
-                                    配送：<span class="ship-no-label" style="color:var(--highlight); font-weight:bold;">${displayShipNo}</span>
+                                <div style="display:flex; align-items:center; gap:8px; margin-bottom: 6px;">
+                                    <span class="mgr-tag ${tagClass}" onclick="toggleShipInput(${i.rowIndex})">${tagText}</span>
+                                    <span style="font-size:11px; color:#aaa;">${i.date || ''} ${i.channel || ''}</span>
                                 </div>
-                                <div id="ship-panel-${i.rowIndex}" class="ship-input-panel hidden">
+                                <div style="font-size:12px; color:#888; font-weight:bold; margin-bottom: 6px;">
+                                    ${i.orderNo || ''}｜<span class="ship-no-label">${i.shipNo || ''}</span>
+                                </div>
+                                <div id="ship-panel-${i.rowIndex}" class="ship-input-panel hidden" style="margin-bottom: 6px;">
                                     <input type="text" placeholder="輸入配送單號" id="ship-input-val-${i.rowIndex}" style="margin:0; padding:8px; font-size:14px;">
                                     <button class="btn-small active" onclick="submitShipNo(${i.rowIndex})" style="margin-top:5px; width:100%;">儲存單號</button>
                                 </div>
+                                <div style="color:#555; font-size:13px;">${itemDetail}</div>
                             </div>
-                            <div class="mgr-right price-jpy">¥${i.jpy || 0}</div>
-                        </div>
-                        <div class="mgr-row">
-                            <div class="mgr-left" style="color:#555; font-size:13px;">${itemDetail}</div>
-                            <div class="mgr-right">${twdDisplay}</div>
-                        </div>
-                        <div class="mgr-row">
-                            <div class="mgr-left" style="font-size:11px; color:#aaa;">${i.date || ''} ${i.channel || ''}</div>
-                            <div class="mgr-right" style="color:#888; font-size:11px;">${weightDisplay}</div>
+                            <div class="mgr-right" style="display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
+                                <div class="price-jpy">¥${i.jpy || 0}</div>
+                                <div>${twdDisplay}</div>
+                                <div style="color:#888; font-size:11px;">${weightDisplay}</div>
+                            </div>
                         </div>
                     </div>`;
                 }).join('');
@@ -393,11 +406,11 @@
             }
         }
 
-        async function updateOrderField(rIdx, col, val) {
+        async function updateOrderField(rIdx, col, val, inputEl) {
             if (!val) return;
             const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "updateOrderRecordField", rowIndex: rIdx, column: col, value: val }) });
             if (res.ok) {
-                const container = event.target.parentElement;
+                const container = inputEl.parentElement;
                 if (col === 'F') container.innerHTML = `<span class="price-twd">$${val}</span>`;
                 if (col === 'H') container.innerHTML = `<span>${val}kg</span>`;
             }
