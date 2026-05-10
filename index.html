@@ -110,7 +110,9 @@
         .mgr-tag { padding: 3px 8px; border-radius: 6px; font-size: 11px; color: white; font-weight: bold; cursor: pointer; margin-right: 8px; }
         .mgr-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
         .mgr-sub { color: #888; font-size: 12px; }
-        .inline-input { width: 80px !important; padding: 4px !important; margin: 0 !important; font-size: 12px !important; height: 28px !important; }
+        .inline-input-group { display: flex; gap: 5px; width: 100%; margin-top: 5px; }
+        .inline-input-group input { margin: 0; padding: 6px; font-size: 13px; height: 32px; flex: 1; }
+        .inline-input-group button { width: 60px; margin: 0; padding: 0; height: 32px; font-size: 12px; }
     </style>
 </head>
 <body onload="initApp()">
@@ -429,7 +431,7 @@
             const date = line1.substring(0, 4);
             const channel = line1.substring(4).trim();
             const orderNo = lines[1];
-            const jpyPrice = lines[2].replace(/[^\d]/g, '');
+            const jpyPrice = lines[2];
             const contentLine = lines[3];
             let diaowa = "", wa = "", key = "", others = [];
             const items = contentLine.split(/[、，, ]+/);
@@ -475,90 +477,92 @@
             const resDiv = document.getElementById('order-mgr-results');
             if (!data || data.length === 0) { resDiv.innerHTML = `<div style="padding:20px; text-align:center; color:#ccc;">無資料</div>`; return; }
 
-            resDiv.innerHTML = data.map(i => {
-                const shipNo = i.shipNo || "";
-                const twPrice = i.twpPrice || "";
-                const jpPrice = i.jpyPrice || "";
-                const weight = i.weight || "";
-                const rowId = i.rowIndex;
+            resDiv.innerHTML = data.map((i, idx) => {
+                const jpyVal = (i.jpy || "").replace(/[^0-9]/g, "");
+                const twdVal = (i.twd || "").replace(/[^0-9]/g, "");
+                const shippingNo = (i.shippingNo || "").trim();
+                const weight = (i.weight || "").trim();
+
+                const jpyDisplay = jpyVal ? `<span style="color:#9FABE0; font-weight:bold;">¥${jpyVal}</span>` : 
+                    `<div class="inline-input-group"><input type="number" id="input-jpy-${idx}" placeholder="日幣"><button class="btn-small active" onclick="updateMgrField(${i.rowIndex}, 'jpy', 'input-jpy-${idx}')">送出</button></div>`;
+                
+                const twdDisplay = twdVal ? `<span style="color:#FB9E09; font-weight:bold;">$${twdVal}</span>` : 
+                    `<div class="inline-input-group"><input type="number" id="input-twd-${idx}" placeholder="台幣"><button class="btn-small active" onclick="updateMgrField(${i.rowIndex}, 'twd', 'input-twd-${idx}')">送出</button></div>`;
+
+                const shippingDisplay = shippingNo ? `<span class="mgr-tag" style="background:#88857D;" onclick="editMgrField(this, ${i.rowIndex}, 'shippingNo')">${shippingNo}</span>` : 
+                    `<span class="mgr-tag" style="background:#DEBAD6;" onclick="showInlineInput(this, ${i.rowIndex}, 'shippingNo')">點擊輸入貨況</span>`;
+
+                const weightDisplay = weight ? `<span class="mgr-tag" style="background:#B08968;" onclick="editMgrField(this, ${i.rowIndex}, 'weight')">${weight}kg</span>` : 
+                    `<span class="mgr-tag" style="background:#DBCDC1;" onclick="showInlineInput(this, ${i.rowIndex}, 'weight')">出貨標籤</span>`;
 
                 return `
-                <div class="mgr-item-card" id="mgr-card-${rowId}">
+                <div class="mgr-item-card">
                     <div class="mgr-row">
-                        <div style="font-weight:bold;">${i.date} ${i.channel}</div>
-                        <div class="mgr-sub">${i.orderNo}</div>
+                        <div style="font-weight:bold; color:var(--title-color);">${i.date} ${i.channel}</div>
+                        <div style="font-size:11px; color:#888;">#${i.orderNo}</div>
                     </div>
-                    <div class="mgr-row">
-                        <div>
-                            ${jpPrice ? `<span style="color:#9FABE0; font-weight:bold;">¥${jpPrice}</span>` : `<input type="number" class="inline-input" placeholder="¥日幣" onblur="updateMgrField(${rowId}, 'jpyPrice', this.value)">`}
-                            ${twPrice ? `<span style="color:#FB9E09; font-weight:bold; margin-left:10px;">$${twPrice}</span>` : `<input type="number" class="inline-input" placeholder="$台幣" onblur="updateMgrField(${rowId}, 'twpPrice', this.value)">`}
-                        </div>
-                        <div id="ship-area-${rowId}">
-                            ${shipNo ? `<span class="mgr-tag" style="background:#88857D;" onclick="editShip(${rowId}, '${shipNo}', '${weight}')">${shipNo}</span>` : `<span class="mgr-tag" style="background:#EDE0D4; color:#74512D;" onclick="editShip(${rowId}, '', '')">+ 出貨</span>`}
+                    <div class="mgr-row" style="margin-top:8px;">
+                        <div style="display:flex; gap:10px; align-items:center; flex:1;">
+                            ${jpyDisplay} ${twdDisplay}
                         </div>
                     </div>
-                    <div style="font-size:12px; margin-top:5px; border-top:1px dashed #eee; padding-top:5px;">
-                        ${i.diaowa ? `吊娃x${i.diaowa} ` : ''}${i.wa ? `娃x${i.wa} ` : ''}${i.key ? `鑰匙x${i.key} ` : ''}${i.others ? i.others : ''}
-                        ${weight ? `<span style="float:right; color:#B08968;">${weight} kg</span>` : ''}
+                    <div style="margin:8px 0; padding:8px; background:#fcfcfc; border-radius:8px;">
+                        ${i.diaowa ? `吊娃:${i.diaowa} ` : ''}${i.wa ? `娃:${i.wa} ` : ''}${i.key ? `鑰匙圈:${i.key} ` : ''}${i.others || ''}
+                    </div>
+                    ${i.note ? `<div class="mgr-sub">備註：${i.note}</div>` : ''}
+                    <div class="mgr-row" style="margin-top:10px; gap:5px;" id="actions-${idx}">
+                        ${shippingDisplay} ${weightDisplay}
                     </div>
                 </div>`;
             }).join('');
         }
 
-        function editShip(rowId, oldShip, oldWeight) {
-            const area = document.getElementById(`ship-area-${rowId}`);
-            area.innerHTML = `
-                <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end;">
-                    <input type="text" id="input-ship-${rowId}" class="inline-input" style="width:120px !important" placeholder="配送單號" value="${oldShip}">
-                    <input type="number" id="input-weight-${rowId}" class="inline-input" style="width:120px !important" placeholder="重量(kg)" value="${oldWeight}">
-                    <button class="btn-small active" onclick="saveShip(${rowId})">儲存</button>
-                </div>
-            `;
+        function showInlineInput(el, rowIndex, field) {
+            const parent = el.parentNode;
+            const placeholder = field === 'weight' ? '輸入重量(kg)' : '輸入配送單號';
+            const unit = field === 'weight' ? 'kg' : '';
+            parent.innerHTML = `
+                <div class="inline-input-group">
+                    <input type="text" id="inline-edit-${rowIndex}" placeholder="${placeholder}">
+                    <button class="btn-small active" onclick="updateMgrField(${rowIndex}, '${field}', 'inline-edit-${rowIndex}', '${unit}')">儲存</button>
+                </div>`;
         }
 
-        async function saveShip(rowId) {
-            const shipNo = document.getElementById(`input-ship-${rowId}`).value.trim();
-            const weight = document.getElementById(`input-weight-${rowId}`).value.trim();
-            const area = document.getElementById(`ship-area-${rowId}`);
+        function editMgrField(el, rowIndex, field) {
+            const currentVal = el.innerText.replace('kg', '');
+            showInlineInput(el, rowIndex, field);
+            document.getElementById(`inline-edit-${rowIndex}`).value = currentVal;
+        }
+
+        async function updateMgrField(rowIndex, field, inputId, unit = '') {
+            let val = document.getElementById(inputId).value.trim();
+            if (!val) return;
             
+            // 決定傳送的 Action 與欄位 (貨況單號傳至D欄)
+            let actionName = "updateOrderRecordField";
+            let fieldMap = { 'jpy': 'C', 'twd': 'F', 'shippingNo': 'D', 'weight': 'I' };
+            let targetCol = fieldMap[field];
+
             try {
-                area.innerHTML = "<span style='font-size:10px;'>更新中...</span>";
                 const response = await fetch(API_URL, { 
                     method: "POST", 
                     body: JSON.stringify({ 
-                        action: "updateOrderRecordShip", 
-                        rowIndex: rowId,
-                        shipNo: shipNo,
-                        weight: weight
+                        action: actionName, 
+                        rowIndex: rowIndex, 
+                        column: targetCol, 
+                        value: val + (unit === 'kg' ? '' : '') 
                     }) 
                 });
-                
-                if(response.ok) {
-                    searchOrderMgr(); // 重新整理列表
+                const res = await response.json();
+                if (res.success) {
+                    searchOrderMgr(); // 成功後立即重新整理清單
                 } else {
-                    alert("更新失敗");
+                    alert("更新失敗: " + res.message);
                 }
-            } catch(e) {
-                alert("網路錯誤");
+            } catch (e) {
+                alert("網路錯誤，請稍後再試");
             }
         }
-
-        async function updateMgrField(rowId, field, value) {
-            if(!value) return;
-            try {
-                await fetch(API_URL, { 
-                    method: "POST", 
-                    body: JSON.stringify({ 
-                        action: "updateOrderRecordField", 
-                        rowIndex: rowId,
-                        field: field,
-                        value: value
-                    }) 
-                });
-                searchOrderMgr();
-            } catch(e) { console.error(e); }
-        }
-
     </script>
 </body>
 </html>
