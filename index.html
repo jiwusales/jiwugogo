@@ -106,13 +106,12 @@
         .group-title { font-weight: bold; font-size: 13px; color: var(--highlight); margin: 8px 0 4px 0; display: block; text-decoration: underline; cursor: pointer; }
 
         /* 訂購管理專用樣式 */
-        .mgr-item-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 12px; margin-bottom: 10px; font-size: 13px; line-height: 1.6; position: relative; }
-        .mgr-tag { padding: 4px 8px; border-radius: 6px; font-size: 11px; color: white; font-weight: bold; cursor: pointer; margin-right: 8px; display: inline-block; min-width: 40px; text-align: center; }
+        .mgr-item-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 12px; margin-bottom: 10px; font-size: 13px; line-height: 1.6; }
+        .mgr-tag { padding: 4px 10px; border-radius: 6px; font-size: 11px; color: white; font-weight: bold; cursor: pointer; margin-right: 8px; display: inline-block; margin-bottom: 5px;}
         .mgr-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
         .mgr-sub { color: #888; font-size: 12px; }
         .inline-input-box { display: flex; gap: 5px; margin-top: 5px; }
-        .inline-input-box input { height: 30px; padding: 4px 8px; margin: 0; font-size: 12px; }
-        .inline-input-box .btn-small { margin: 0; padding: 0 10px; }
+        .inline-input-box input { margin: 0; padding: 6px; font-size: 13px; height: 32px; }
     </style>
 </head>
 <body onload="initApp()">
@@ -431,7 +430,7 @@
             const date = line1.substring(0, 4);
             const channel = line1.substring(4).trim();
             const orderNo = lines[1];
-            const jpyPrice = lines[2].replace(/[^\d]/g, '');
+            const jpyPrice = lines[2];
             const contentLine = lines[3];
             let diaowa = "", wa = "", key = "", others = [];
             const items = contentLine.split(/[、，, ]+/);
@@ -477,90 +476,84 @@
             const resDiv = document.getElementById('order-mgr-results');
             if (!data || data.length === 0) { resDiv.innerHTML = `<div style="padding:20px; text-align:center; color:#ccc;">無資料</div>`; return; }
 
-            resDiv.innerHTML = data.map((i, index) => {
-                // 1. 處理顯示：日圓 ¥、台幣 $，移除文字
-                const jpyVal = (i.jpyPrice || "").toString().replace(/[^\d\.]/g, '');
-                const twdVal = (i.twdPrice || "").toString().replace(/[^\d\.]/g, '');
-                
-                const jpyDisplay = jpyVal ? `<span style="color:#9FABE0; font-weight:bold;">¥${jpyVal}</span>` : 
-                    `<input type="number" placeholder="日幣" id="edit-jpy-${index}" class="mgr-inline-input" onkeydown="if(event.keyCode==13) updateMgrCell(${i.rowIndex}, 'J', this.value)">`;
-                
-                const twdDisplay = twdVal ? `<span style="color:#FB9E09; font-weight:bold;">$${twdVal}</span>` : 
-                    `<input type="number" placeholder="台幣" id="edit-twd-${index}" class="mgr-inline-input" onkeydown="if(event.keyCode==13) updateMgrCell(${i.rowIndex}, 'K', this.value)">`;
+            resDiv.innerHTML = data.map((i, idx) => {
+                const shippingId = `mgr-ship-${idx}`;
+                const weightId = `mgr-weight-${idx}`;
+                const jpyId = `mgr-jpy-${idx}`;
+                const twdId = `mgr-twd-${idx}`;
 
-                // 5. 配送單號空白不顯示
-                const trackNo = i.trackNo || "";
-                const trackDisplay = trackNo ? `<div class="mgr-sub">單號：${trackNo}</div>` : "";
+                // 修改點：配送單號如果是空白就不顯示文字
+                const trackDisplay = i.trackingNo ? `🚚 單號：${i.trackingNo}` : '';
 
                 return `
-                <div class="mgr-item-card" id="mgr-card-${index}">
+                <div class="mgr-item-card">
                     <div class="mgr-row">
-                        <div style="font-weight:bold; color:var(--title-color);">${i.date} ${i.channel}</div>
-                        <div>${jpyDisplay} / ${twdDisplay}</div>
+                        <span style="font-weight:bold; color:var(--highlight);">${i.date} ${i.channel}</span>
+                        <span class="mgr-sub">${i.orderNo}</span>
                     </div>
-                    <div class="mgr-sub">編號：${i.orderNo}</div>
-                    <div style="margin:5px 0;">${i.content}</div>
-                    ${trackDisplay}
-                    <div style="margin-top:8px; display:flex; gap:5px;">
-                        <span class="mgr-tag" style="background:#DEBAD6" onclick="showInlineInput('weight', ${index}, ${i.rowIndex})">出貨</span>
-                        <span class="mgr-tag" style="background:#B08968" onclick="showInlineInput('track', ${index}, ${i.rowIndex})">貨況</span>
+                    <div style="margin: 5px 0;">
+                        <span class="mgr-tag" style="background:#9FABE0" onclick="showInlineInput('${jpyId}')">¥${i.jpyPrice || '輸入'}</span>
+                        <span class="mgr-tag" style="background:#FB9E09" onclick="showInlineInput('${twdId}')">$${i.twdPrice || '輸入'}</span>
+                        <span class="mgr-tag" style="background:#ADC2D3" onclick="showInlineInput('${weightId}')">${i.weight ? i.weight+'kg' : '重量kg'}</span>
+                        <span class="mgr-tag" style="background:#C6AC8F" onclick="showInlineInput('${shippingId}')">${i.trackingNo ? '貨況' : '輸入單號'}</span>
                     </div>
-                    <div id="inline-box-${index}" class="hidden"></div>
+                    
+                    <!-- 內嵌輸入欄位 (隱藏) -->
+                    <div id="${jpyId}" class="inline-input-box hidden">
+                        <input type="text" placeholder="輸入日幣數字" onkeydown="if(event.keyCode==13) updateMgrField(${i.rowIndex}, 'E', this.value, '${jpyId}')">
+                    </div>
+                    <div id="${twdId}" class="inline-input-box hidden">
+                        <input type="text" placeholder="輸入台幣數字" onkeydown="if(event.keyCode==13) updateMgrField(${i.rowIndex}, 'F', this.value, '${twdId}')">
+                    </div>
+                    <div id="${weightId}" class="inline-input-box hidden">
+                        <input type="text" placeholder="輸入重量 (kg)" onkeydown="if(event.keyCode==13) updateMgrField(${i.rowIndex}, 'K', this.value, '${weightId}')">
+                    </div>
+                    <div id="${shippingId}" class="inline-input-box hidden">
+                        <input type="text" placeholder="輸入配送單號" onkeydown="if(event.keyCode==13) updateMgrField(${i.rowIndex}, 'D', this.value, '${shippingId}')">
+                    </div>
+
+                    <div style="color:var(--text);">${i.content}</div>
+                    ${trackDisplay ? `<div style="color:#599D9C; font-size:12px; margin-top:3px;">${trackDisplay}</div>` : ''}
+                    ${i.note ? `<div class="mgr-sub">備註：${i.note}</div>` : ''}
                 </div>`;
             }).join('');
         }
 
-        // 2 & 3. 點擊後顯示行內輸入框，配送單號傳至 D 欄
-        function showInlineInput(type, uiIndex, rowIndex) {
-            const box = document.getElementById(`inline-box-${uiIndex}`);
-            const placeholder = type === 'weight' ? '輸入重量 (kg)' : '輸入配送單號';
-            const col = type === 'weight' ? 'M' : 'D'; // 重量 M 欄, 貨況 D 欄
-            
-            box.innerHTML = `
-                <div class="inline-input-box">
-                    <input type="text" id="inline-input-${uiIndex}" placeholder="${placeholder}">
-                    <button class="btn-small active" onclick="submitInlineUpdate(${uiIndex}, ${rowIndex}, '${col}')">送出</button>
-                    <button class="btn-small" onclick="this.parentElement.parentElement.classList.add('hidden')">取消</button>
-                </div>
-            `;
-            box.classList.remove('hidden');
-            document.getElementById(`inline-input-${uiIndex}`).focus();
+        function showInlineInput(id) {
+            // 關閉其他開啟的
+            document.querySelectorAll('.inline-input-box').forEach(el => {
+                if(el.id !== id) el.classList.add('hidden');
+            });
+            document.getElementById(id).classList.toggle('hidden');
+            const input = document.querySelector(`#${id} input`);
+            if(!document.getElementById(id).classList.contains('hidden')) input.focus();
         }
 
-        async function submitInlineUpdate(uiIndex, rowIndex, col) {
-            const input = document.getElementById(`inline-input-${uiIndex}`);
-            const val = input.value.trim();
-            if (!val) return;
-
-            const box = document.getElementById(`inline-box-${uiIndex}`);
-            box.innerHTML = '<div style="font-size:12px; color:#888; padding:5px;">更新中...</div>';
-
+        async function updateMgrField(rowIndex, col, value, boxId) {
+            if(!value) return;
+            const box = document.getElementById(boxId);
+            const originalHtml = box.innerHTML;
+            box.innerHTML = `<span style="font-size:12px; color:#888;">更新中...</span>`;
+            
             try {
                 const response = await fetch(API_URL, { 
                     method: "POST", 
-                    body: JSON.stringify({ action: "updateMgrCell", rowIndex, col, value: val }) 
+                    body: JSON.stringify({ action: "updateMgrField", rowIndex, col, value }) 
                 });
-                const res = await response.json();
-                if (res.success) {
-                    // 4. 貨況/重量立刻改變 (重新搜尋以更新介面)
+                const result = await response.json();
+                if(result.success) {
+                    box.classList.add('hidden');
+                    // 更新完立刻重新搜尋以刷新貨況與數值
                     searchOrderMgr();
                 } else {
-                    alert("更新失敗：" + res.message);
+                    alert("更新失敗");
+                    box.innerHTML = originalHtml;
                 }
-            } catch (e) {
-                alert("連線發生錯誤，請稍後再試");
-                searchOrderMgr();
+            } catch(e) {
+                alert("網路錯誤，請稍後再試");
+                box.innerHTML = originalHtml;
             }
         }
-
-        async function updateMgrCell(rowIndex, col, val) {
-            if (!val) return;
-            try {
-                await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "updateMgrCell", rowIndex, col, value: val }) });
-                searchOrderMgr();
-            } catch (e) { alert("更新失敗"); }
-        }
-
     </script>
 </body>
 </html>
