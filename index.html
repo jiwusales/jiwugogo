@@ -111,30 +111,27 @@
 <body onload="initApp()">
 
     <div class="container">
-        <!-- 訂單登記 -->
+        <!-- 頁面1：訂單登記 (原代碼完全保留) -->
         <div id="page-add" class="page active">
             <div class="header-wrapper"><div class="header">訂單登記</div></div>
             <div class="card">
-                <!-- IP 分類區塊已透過 CSS 隱藏 -->
                 <div class="ip-group" id="ip-buttons">
                     <button class="btn-small active" onclick="setIP('多團')">自動辨識</button>
                 </div>
                 <input type="text" id="other-ip-input" class="hidden" placeholder="輸入IP名稱" autocomplete="off">
-
                 <label>訂單來源</label>
                 <div class="type-group">
                     <div class="type-item active" onclick="setSheetType('線上', this)">線上</div>
                     <div class="type-item" onclick="setSheetType('開團', this)">開團</div>
                     <div class="type-item" onclick="setSheetType('現貨', this)">現貨</div>
                 </div>
-
                 <label>快速輸入 (姓名 + 訂單內容)</label>
-<textarea id="quick-input" rows="8" placeholder="第一行要輸入姓名唷 ദ്ദി( ¯꒳¯ ) " autocomplete="off" onkeydown="if(event.keyCode==13 && (event.ctrlKey || event.metaKey)){ event.preventDefault(); parseAndConfirm(); }"></textarea>
-<button class="btn" onclick="parseAndConfirm()">內容確認</button>
+                <textarea id="quick-input" rows="8" placeholder="第一行要輸入姓名唷 ദ്ദി( ¯꒳¯ ) " autocomplete="off" onkeydown="if(event.keyCode==13 && (event.ctrlKey || event.metaKey)){ event.preventDefault(); parseAndConfirm(); }"></textarea>
+                <button class="btn" onclick="parseAndConfirm()">內容確認</button>
             </div>
         </div>
 
-        <!-- 其他頁面保持不變 -->
+        <!-- 頁面2：訂單查詢 (原代碼完全保留) -->
         <div id="page-search" class="page">
             <div class="header-wrapper"><div class="header">訂單查詢</div></div>
             <div class="card">
@@ -156,30 +153,40 @@
             </div>
         </div>
 
+        <!-- 頁面3：訂購管理 (新增與修改區域) -->
         <div id="page-record" class="page">
-            <div class="header-wrapper"><div class="header">下單紀錄</div></div>
+            <div class="header-wrapper"><div class="header">訂購管理</div></div>
+            
+            <!-- 4. 訂購登記區 -->
             <div class="card">
-                <div id="record-list"><div style="text-align:center; color:#C6AC8F;">載入最新紀錄中...</div></div>
+                <div style="font-weight:bold; color:var(--highlight); margin-bottom:10px;">✨ 訂購登記</div>
+                <label>快速輸入 (時間 / 編號 / 品項)</label>
+                <textarea id="order-mgr-input" rows="6" placeholder="0509&#10;487052462&#10;吊娃5、娃3、鑰匙圈2、杯墊1..." onkeydown="handleOrderMgrKey(event)"></textarea>
+                <button class="btn" onclick="submitOrderMgr()">確認登記</button>
+            </div>
+
+            <!-- 5. 訂購查詢區 -->
+            <div class="card">
+                <div style="font-weight:bold; color:var(--highlight); margin-bottom:10px;">🔍 訂購查詢</div>
+                <input type="text" id="order-mgr-search" placeholder="日期 / 編號 / 通路" onkeydown="if(event.keyCode==13){ searchOrderMgr(); }">
+                <div id="order-mgr-results"></div>
             </div>
         </div>
 
-        <div id="page-inventory" class="page"><div class="header-wrapper"><div class="header">庫存與打包</div></div><div class="card">功能開發中...</div></div>
-        <div id="page-shipping" class="page"><div class="header-wrapper"><div class="header">出貨狀態</div></div><div class="card">功能開發中...</div></div>
+        <!-- 其他功能區 -->
+        <div id="page-inventory" class="page"><div class="header-wrapper"><div class="header">庫存點名</div></div><div class="card">功能開發中...</div></div>
+        <div id="page-shipping" class="page"><div class="header-wrapper"><div class="header">出貨區</div></div><div class="card">功能開發中...</div></div>
     </div>
 
-    <!-- 內容確認視窗 -->
+    <!-- 內容確認視窗 (原代碼完全保留) -->
     <div id="confirm-modal" class="modal-overlay hidden">
         <div class="confirm-card">
             <div class="header" style="margin: 0 0 5px 0; text-align: center;">確認訂單內容</div>
-            <!-- 新增：在此顯示當前 IP 名稱 -->
             <div id="modal-ip-display" style="text-align: center; font-size: 12px; color: #B08968; font-weight: bold; margin-bottom: 15px;"></div>
-            
             <div id="confirm-content"></div>
-            
             <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
                 <label style="margin:0;">付款方式</label>
                 <div id="modal-pay-selector" class="pay-selector-direct"></div>
-
                 <div id="modal-bank-input" class="hidden" style="margin-top:10px; background: #fdfdfd; padding: 10px; border-radius: 10px; border: 1px dashed var(--accent);">
                     <div style="font-size: 12px; margin-bottom: 5px; color: var(--highlight);" id="bank-input-label"></div>
                     <div style="display: flex; gap: 5px;">
@@ -187,13 +194,11 @@
                         <button class="btn-small active" onclick="confirmModalBank()" style="margin:0; padding: 0 15px;">確認</button>
                     </div>
                 </div>
-
                 <div style="margin-top: 15px;">
                     <label style="margin:0;">訂金</label>
                     <input type="number" id="modal-deposit" class="deposit-input" placeholder="請輸入金額" onkeydown="if(event.keyCode==13){ finalSubmit(); }">
                 </div>
             </div>
-
             <div style="margin-top: 20px; display: flex; gap: 10px;">
                 <button class="btn" style="background: #EDE0D4; color: var(--text); flex: 1;" onclick="closeModal()">取消</button>
                 <button class="btn" style="flex: 2; background: var(--highlight);" id="btn-final-submit" onclick="finalSubmit()">確認並寫入</button>
@@ -201,10 +206,11 @@
         </div>
     </div>
 
+    <!-- 底部導覽 -->
     <div class="bottom-nav">
         <div class="nav-item" id="nav-add" onclick="switchPage('add', this)"><span>訂單登記</span></div>
         <div class="nav-item" id="nav-search" onclick="switchPage('search', this)"><span>訂單查詢</span></div>
-        <div class="nav-item" id="nav-record" onclick="switchPage('record', this)"><span>下單紀錄</span></div>
+        <div class="nav-item" id="nav-record" onclick="switchPage('record', this)"><span>訂購管理</span></div>
         <div class="nav-item" id="nav-inventory" onclick="switchPage('inventory', this)"><span>庫存點名</span></div>
         <div class="nav-item" id="nav-shipping" onclick="switchPage('shipping', this)"><span>出貨區</span></div>
     </div>
@@ -213,7 +219,6 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbzEaZqaGT4HU2sWDUIiBLQ2TljlaW4YCeupcd_yVf0AlboFATxXSKpkwUwfUWbTuovGKA/exec";
         let ipList = []; let selectedIP = "多團"; let selectedSheetType = "線上"; let currentParsedData = null;
         let currentSearchStatusFilter = "";
-
         const payColorMap = { "中信": "#599D9C", "LPay": "#00B900", "現金": "#FDD55E", "無卡": "#ADC2D3", "LBank": "#1E77BD", "IPass": "#F09163" };
         const paymentOptions = ['中信', 'LBank', 'LPay', 'IPass', '無卡', '現金'];
         const statusColorMap = { "預購": "#DEBAD6", "現貨": "#FFE15E", "已出貨": "#88857D" };
@@ -226,18 +231,14 @@
             fetchIPs(); renderModalPaySelector();
         }
 
+        /* --- 原有功能函數 (完全保留) --- */
         async function fetchIPs() {
             try {
                 const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "getIPs" }) });
                 const data = await response.json();
-                if (Array.isArray(data)) { 
-                    ipList = data; 
-                    localStorage.setItem('cached_ip_list', JSON.stringify(data));
-                    renderIPButtons(); 
-                }
+                if (Array.isArray(data)) { ipList = data; localStorage.setItem('cached_ip_list', JSON.stringify(data)); renderIPButtons(); }
             } catch (e) { console.error(e); }
         }
-
         function renderIPButtons() {
             const container = document.getElementById('ip-buttons');
             const priorityOrder = ["吉伊卡哇", "白熊", "三麗鷗", "寶可夢"];
@@ -247,43 +248,25 @@
             container.innerHTML = `<button class="btn-small ${selectedIP === '多團' ? 'active' : ''}" onclick="setIP('多團')">自動辨識</button>` + 
                 finalOrder.map(name => `<button class="btn-small ${name === selectedIP ? 'active' : ''}" onclick="setIP('${name}')">${name}</button>`).join('');
         }
-
         function renderModalPaySelector() {
             const container = document.getElementById('modal-pay-selector');
             container.innerHTML = paymentOptions.map(p => `<button class="pay-btn" id="modal-pay-${p}" style="background-color: ${payColorMap[p]}" onclick="selectModalPay('${p}')">${p}</button>`).join('');
         }
-
         function setIP(val) { selectedIP = val; renderIPButtons(); }
-        function setSheetType(val, el) { 
-            selectedSheetType = val; 
-            document.querySelectorAll('.type-item').forEach(i => i.classList.remove('active')); 
-            el.classList.add('active'); 
-        }
-
-        function setStatusFilter(val, el) {
-            currentSearchStatusFilter = val;
-            document.querySelectorAll('#search-status-btns .filter-btn').forEach(b => b.classList.remove('active'));
-            el.classList.add('active');
-            if (document.getElementById('quick-search-input').value.trim()) searchOrders();
-        }
-
+        function setSheetType(val, el) { selectedSheetType = val; document.querySelectorAll('.type-item').forEach(i => i.classList.remove('active')); el.classList.add('active'); }
         function switchPage(pageId, element) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById('page-' + pageId).classList.add('active');
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             if (element) element.classList.add('active');
             localStorage.setItem('last_active_page', pageId);
-            if (pageId === 'record') fetchRecentRecords();
         }
-
         function parseAndConfirm() {
             const rawText = document.getElementById('quick-input').value.trim();
             if (!rawText) return;
             const lines = rawText.split('\n').map(l => l.trim()).filter(l => l !== "");
             const customerName = lines[0];
-            const products = [];
-            let currentGroup = "無";
-            let total = 0;
+            const products = []; let currentGroup = "無"; let total = 0;
             for (let i = 1; i < lines.length; i++) {
                 const line = lines[i];
                 if (line.match(/【(.+)】/)) { currentGroup = line.match(/【(.+)】/)[1]; continue; }
@@ -293,17 +276,13 @@
                         const name = p[1].replace(/^\d+[\.\s\-、]*/, '').trim(); 
                         const price = p[2];
                         if (name.includes("總金額")) continue;
-                        products.push({ group: currentGroup, name: name, price: price }); 
-                        total += parseInt(price); 
+                        products.push({ group: currentGroup, name: name, price: price }); total += parseInt(price); 
                     }
                 }
             }
             let finalStatus = (selectedSheetType === '現貨' ? "現貨" : "預購");
             currentParsedData = { customerName, products, total, type: (selectedSheetType === '現貨' ? '線上' : selectedSheetType), status: finalStatus, ip: selectedIP, deposit: "", payMethod: "" };
-            
-            // 更新 Modal 內的 IP 顯示
             document.getElementById('modal-ip-display').innerText = `IP 分類：${selectedIP}`;
-
             let detailHtml = `<div style="background:#f9f9f9; padding:10px; border-radius:10px; margin-bottom:10px; font-size:13px;"><b>顧客：</b>${customerName}<br><b>來源：</b>${selectedSheetType}</div><div class="items-container" style="border:none; margin:0; padding:0;">`;
             products.forEach(item => {
                 detailHtml += `<div class="item-line" style="margin-bottom:12px; border-bottom:1px solid #f0f0f0; padding-bottom:8px;"><div style="flex:1;"><div style="font-weight:bold; color:var(--text);">${item.name}</div><div style="display:inline-block; font-size:10px; background:var(--accent); color:var(--highlight); padding:1px 6px; border-radius:4px; margin-top:2px;">${item.group}</div></div><div style="font-weight:bold; color:var(--highlight); font-size:15px;">$${item.price}</div></div>`;
@@ -315,7 +294,6 @@
             document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('confirm-modal').classList.remove('hidden');
         }
-
         function selectModalPay(method) {
             document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`modal-pay-${method}`).classList.add('active');
@@ -324,12 +302,8 @@
                 bankInput.classList.remove('hidden');
                 document.getElementById('bank-input-label').innerText = `匯款後五碼：`;
                 bankInput.dataset.method = method;
-            } else {
-                updateModalPayDisplay(method);
-                document.getElementById('modal-bank-input').classList.add('hidden');
-            }
+            } else { updateModalPayDisplay(method); document.getElementById('modal-bank-input').classList.add('hidden'); }
         }
-
         function confirmModalBank() {
             const method = document.getElementById('modal-bank-input').dataset.method;
             const code = document.getElementById('modal-code').value;
@@ -338,10 +312,8 @@
             document.getElementById('modal-bank-input').classList.add('hidden');
             document.getElementById('modal-code').value = "";
         }
-
         function updateModalPayDisplay(val) { currentParsedData.payMethod = val; }
         function closeModal() { document.getElementById('confirm-modal').classList.add('hidden'); }
-
         async function finalSubmit() {
             const btn = document.getElementById('btn-final-submit');
             if (!currentParsedData.payMethod) { alert("請選擇付款方式"); return; }
@@ -354,7 +326,6 @@
             } catch (e) { alert("提交失敗"); }
             finally { btn.disabled = false; btn.innerText = "確認並寫入"; }
         }
-
         async function searchOrders() {
             const keyword = document.getElementById('quick-search-input').value.trim();
             if (!keyword) return;
@@ -367,7 +338,6 @@
                 renderSearchResults(data, list, keyword, currentSearchStatusFilter);
             } catch (e) { list.innerHTML = "搜尋失敗"; }
         }
-
         function renderSearchResults(data, list, keyword, statusFilter) {
             if (!data || data.length === 0) { list.innerHTML = "找不到資料"; return; }
             let lastRealName = ""; let lastRealPay = ""; let lastRealDeposit = ""; let lastRealDate = ""; let lastRealPayDate = "";
@@ -391,9 +361,7 @@
             const timeGroups = {};
             filteredData.forEach(item => {
                 const key = `${item.lineName}_${item.orderDate}_${item.payMethod}`; 
-                if (!timeGroups[key]) {
-                    timeGroups[key] = { name: item.lineName, pay: item.payMethod || "", deposit: item.deposit, orderDate: item.orderDate, payDate: item.payDate || "未填", groups: {} };
-                }
+                if (!timeGroups[key]) { timeGroups[key] = { name: item.lineName, pay: item.payMethod || "", deposit: item.deposit, orderDate: item.orderDate, payDate: item.payDate || "未填", groups: {} }; }
                 if (!timeGroups[key].groups[item.groupName]) timeGroups[key].groups[item.groupName] = [];
                 timeGroups[key].groups[item.groupName].push(item);
             });
@@ -417,13 +385,10 @@
             }
             list.innerHTML = html;
         }
-
+        function setStatusFilter(val, el) { currentSearchStatusFilter = val; document.querySelectorAll('#search-status-btns .filter-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); if (document.getElementById('quick-search-input').value.trim()) searchOrders(); }
         function showStatusMenu(id) { document.getElementById(`menu-${id}`).classList.toggle('hidden'); }
-
         async function updateStatusDirect(sheetName, rowIndex, nextStatus, id) {
-            const tag = document.getElementById(`tag-${id}`);
-            const menu = document.getElementById(`menu-${id}`);
-            const oldStatus = tag.innerText;
+            const tag = document.getElementById(`tag-${id}`); const menu = document.getElementById(`menu-${id}`); const oldStatus = tag.innerText;
             tag.innerText = "更新中..."; tag.style.opacity = "0.5"; menu.classList.add('hidden');
             try {
                 const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "updateStatus", sheetName, rowIndex, status: nextStatus }) });
@@ -433,17 +398,111 @@
             } catch (e) { alert("網路錯誤"); tag.innerText = oldStatus; tag.style.backgroundColor = statusColorMap[oldStatus]; } 
             finally { tag.style.opacity = "1"; }
         }
+        function quickTrigger(val) { document.getElementById('quick-search-input').value = val; searchOrders(); }
 
-        async function fetchRecentRecords() {
-            const list = document.getElementById('record-list');
-            try {
-                const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "queryOrder", keyword: "" }) });
-                const data = await response.json();
-                list.innerHTML = data.slice(0, 15).map(i => `<div class="result-group" style="font-size:12px;"><b>${i.lineName}</b>: ${i.name} ($${i.price}) <span style="color:#999;float:right;">${i.status || ''}</span></div>`).join('');
-            } catch (e) { list.innerHTML = "讀取失敗"; }
+        /* --- 4. & 5. 訂購管理全新邏輯 --- */
+        function isMobileDevice() { return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
+
+        // 4-3 電腦版 ENTER 送出，手機版換行
+        function handleOrderMgrKey(e) {
+            if (e.keyCode === 13 && !isMobileDevice()) {
+                e.preventDefault();
+                submitOrderMgr();
+            }
         }
 
-        function quickTrigger(val) { document.getElementById('quick-search-input').value = val; searchOrders(); }
+        // 4-1 & 4-2 解析與寫入
+        async function submitOrderMgr() {
+            const rawText = document.getElementById('order-mgr-input').value.trim();
+            if (!rawText) return;
+            const lines = rawText.split('\n').map(l => l.trim()).filter(l => l !== "");
+            if (lines.length < 2) return alert("請輸入完整資訊（日期、編號、品項）");
+
+            const date = lines[0]; // B欄
+            const orderNo = lines[1]; // D欄
+            const contentLine = lines.slice(2).join('、'); 
+            
+            // 4-2 商品解析邏輯
+            let diaowa = 0, wa = 0, key = 0, others = [];
+            const items = contentLine.split(/[、，, ]+/);
+            items.forEach(item => {
+                const numMatch = item.match(/\d+/);
+                const num = numMatch ? parseInt(numMatch[0]) : 1;
+                if (item.includes("吊娃")) diaowa = num;
+                else if (item.includes("鑰匙圈")) key = num;
+                else if (item.includes("娃")) wa = num;
+                else others.push(item);
+            });
+
+            const channel = (orderNo.startsWith('48') || orderNo.startsWith('m')) ? 'Mercari' : '通路A'; // 自動辨識邏輯
+
+            const payload = {
+                action: "addOrderRecord",
+                data: {
+                    date: date, // B
+                    channel: channel, // C
+                    orderNo: orderNo, // D
+                    diaowa: diaowa, // I
+                    wa: wa, // J
+                    key: key, // K
+                    others: others.join('、'), // L
+                    note: lines[lines.length-1] || "" // M
+                }
+            };
+
+            try {
+                await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+                alert("登記成功！");
+                document.getElementById('order-mgr-input').value = "";
+            } catch (e) { alert("登記失敗"); }
+        }
+
+        // 5-1 & 5-2 查詢功能
+        async function searchOrderMgr() {
+            const kw = document.getElementById('order-mgr-search').value.trim();
+            if (!kw) return;
+            const resDiv = document.getElementById('order-mgr-results');
+            resDiv.innerHTML = "查詢中...";
+
+            try {
+                const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "queryOrderRecord", keyword: kw }) });
+                const data = await response.json();
+                renderOrderMgrList(data);
+            } catch (e) { resDiv.innerHTML = "查詢失敗"; }
+        }
+
+        // 5-3 顯示查詢結果與貨況標籤
+        function renderOrderMgrList(data) {
+            const resDiv = document.getElementById('order-mgr-results');
+            if (!data || data.length === 0) { resDiv.innerHTML = "無資料"; return; }
+
+            resDiv.innerHTML = data.map(i => {
+                const isArrived = i.shipNo && i.shipNo.trim() !== "";
+                const tagText = isArrived ? "到倉" : "未出";
+                const tagColor = isArrived ? "#FDD365" : "#DCDBDB";
+                
+                return `
+                <div class="result-group">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span class="status-tag" style="background:${tagColor}; color:#74512D;" onclick="updateShipNoDirect('${i.orderNo}')">${tagText}</span>
+                        <div style="flex:1;">
+                            <div style="font-weight:bold;">${i.orderNo}</div>
+                            <div style="font-size:11px; color:#999;">${i.date} | ${i.channel}</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:8px; font-size:12px;">
+                        ${i.diaowa ? '吊娃:'+i.diaowa+' ' : ''}${i.wa ? '娃:'+i.wa+' ' : ''}${i.key ? '鑰匙圈:'+i.key+' ' : ''}${i.others}
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function updateShipNoDirect(orderNo) {
+            const shipNo = prompt("請輸入配送單號 (將回傳至D欄)：");
+            if (shipNo === null) return;
+            fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "updateShipNo", orderNo: orderNo, shipNo: shipNo }) })
+            .then(() => { alert("更新成功"); searchOrderMgr(); });
+        }
     </script>
 </body>
 </html>
