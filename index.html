@@ -61,14 +61,8 @@
             -webkit-appearance: none;
         }
         
-        input:focus, textarea:focus {
-            background: #fff !important;
-            border-color: var(--accent) !important;
-            outline: none !important;
-        }
-
+        input:focus, textarea:focus { background: #fff !important; border-color: var(--accent) !important; outline: none !important; }
         label { font-weight: bold; font-size: 12px; margin-top: 8px; display: block; color: var(--highlight); }
-        .ip-group { display: none; }
 
         .filter-group { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 15px 0; }
         .filter-btn { padding: 6px 12px; border-radius: 8px; font-size: 12px; background: var(--accent); border: none; color: var(--text); cursor: pointer; transition: 0.2s; }
@@ -85,8 +79,6 @@
         .status-tag { display: inline-block; padding: 4px 8px; border-radius: 8px; font-size: 11px; color: white; font-weight: bold; cursor: pointer; margin-right: 5px; white-space: nowrap; }
         .status-options { display: flex; gap: 4px; margin-top: 5px; padding: 5px; background: #f0f0f0; border-radius: 8px; }
 
-        .status-header { background: #F5EBE0; padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; margin-top: 15px; color: #74512D; }
-        
         .link-text { cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
         .hidden { display: none !important; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.4); z-index: 2000; display: flex; align-items: center; justify-content: center; }
@@ -96,24 +88,21 @@
         .pay-btn { border: none; border-radius: 12px; padding: 6px 12px; font-size: 12px; font-weight: bold; color: white; cursor: pointer; opacity: 0.6; transition: 0.3s; }
         .pay-btn.active { opacity: 1; transform: scale(1.05); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         
-        .deposit-input { width: 100% !important; padding: 10px !important; margin: 5px 0 !important; font-size: 16px !important; border-color: var(--accent) !important; height: 40px; appearance: textfield; }
-        .deposit-input::-webkit-outer-spin-button, .deposit-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-
+        .deposit-input { width: 100% !important; padding: 10px !important; margin: 5px 0 !important; font-size: 16px !important; border-color: var(--accent) !important; height: 40px; }
         .type-group { display: flex; gap: 10px; margin: 8px 0; }
         .type-item { flex: 1; padding: 10px; text-align: center; background: var(--accent); border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .type-item.active { background: var(--highlight); color: white; }
-
         .group-title { font-weight: bold; font-size: 13px; color: var(--highlight); margin: 8px 0 4px 0; display: block; text-decoration: underline; cursor: pointer; }
 
-        /* 訂購管理專用樣式 */
-        .mgr-item-card { background: #fff; border-bottom: 1px solid #eee; padding: 15px 5px; font-size: 13px; line-height: 1.4; }
-        .mgr-tag { padding: 3px 8px; border-radius: 6px; font-size: 11px; color: white; font-weight: bold; cursor: pointer; }
-        .mgr-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
-        .mgr-col-left { display: flex; flex-direction: column; gap: 3px; flex: 1; }
-        .mgr-col-right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; min-width: 80px; }
-        .mgr-inline-input { margin: 8px 0; display: flex; gap: 5px; background: #f9f9f9; padding: 8px; border-radius: 8px; }
-        .mgr-inline-input input { padding: 8px; font-size: 14px; margin: 0; flex: 1; height: 35px; }
-        .mgr-inline-input .btn-small { height: 35px; margin: 0; }
+        /* 新增：訂購管理專用三行格式樣式，確保不影響舊有樣式 */
+        .mgr-item-card { border-bottom: 1px solid #f0f0f0; padding: 15px 5px; background: #fff; }
+        .mgr-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .mgr-left { text-align: left; flex: 1; display: flex; align-items: center; gap: 6px; overflow: hidden; }
+        .mgr-right { text-align: right; white-space: nowrap; font-weight: bold; min-width: 80px; }
+        .mgr-tag { padding: 2px 8px; border-radius: 6px; font-size: 11px; color: white; font-weight: bold; }
+        .text-sec { color: #888; font-size: 12px; }
+        .text-red { color: #d32f2f; }
+        .text-blue { color: #1976d2; }
     </style>
 </head>
 <body onload="initApp()">
@@ -122,10 +111,7 @@
         <div id="page-add" class="page active">
             <div class="header-wrapper"><div class="header">訂單登記</div></div>
             <div class="card">
-                <div class="ip-group" id="ip-buttons">
-                    <button class="btn-small active" onclick="setIP('多團')">自動辨識</button>
-                </div>
-                <input type="text" id="other-ip-input" class="hidden" placeholder="輸入IP名稱" autocomplete="off">
+                <div id="ip-buttons"></div>
                 <label>訂單來源</label>
                 <div class="type-group">
                     <div class="type-item active" onclick="setSheetType('線上', this)">線上</div>
@@ -133,7 +119,7 @@
                     <div class="type-item" onclick="setSheetType('現貨', this)">現貨</div>
                 </div>
                 <label>快速輸入 (姓名 + 訂單內容)</label>
-                <textarea id="quick-input" rows="8" placeholder="第一行要輸入姓名唷 ദ്ദി( ¯꒳¯ ) " autocomplete="off" onkeydown="if(event.keyCode==13 && (event.ctrlKey || event.metaKey)){ event.preventDefault(); parseAndConfirm(); }"></textarea>
+                <textarea id="quick-input" rows="8" placeholder="第一行要輸入姓名唷 ദ്ദി( ¯꒳¯ ) "></textarea>
                 <button class="btn" onclick="parseAndConfirm()">內容確認</button>
             </div>
         </div>
@@ -148,11 +134,8 @@
                     <button class="filter-btn" onclick="setStatusFilter('預購', this)">預購</button>
                     <button class="filter-btn" onclick="setStatusFilter('已出貨', this)">已出貨</button>
                 </div>
-                <label>輸入團名或姓名</label>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="text" id="quick-search-input" placeholder=" " style="margin: 0; flex: 1;" autocomplete="off" onkeydown="if(event.keyCode==13){ searchOrders(); }">
-                    <button class="btn" id="btn-search-exec" onclick="searchOrders()" style="width: 80px; margin: 0;">搜尋</button>
-                </div>
+                <input type="text" id="quick-search-input" placeholder="輸入團名或姓名">
+                <button class="btn" onclick="searchOrders()">搜尋</button>
             </div>
             <div id="search-results" class="card hidden">
                 <div id="search-results-list"></div>
@@ -163,14 +146,13 @@
             <div class="header-wrapper"><div class="header">訂購管理</div></div>
             <div class="card">
                 <div style="font-weight:bold; color:var(--highlight); margin-bottom:10px;">下單登記</div>
-                <label>快速輸入(時間、編號、內容)</label>
-                <textarea id="order-mgr-input" rows="6" placeholder=" "></textarea>
+                <textarea id="order-mgr-input" rows="6" placeholder="日期通路/單號/日幣/內容"></textarea>
                 <button class="btn" onclick="submitOrderMgr()">確認登記</button>
             </div>
             <div class="card">
                 <div style="font-weight:bold; color:var(--highlight); margin-bottom:10px;">🔍 訂購查詢</div>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="text" id="order-mgr-search" placeholder="日期/通路/編號" style="margin: 0; flex: 1;" onkeydown="if(event.keyCode==13){ searchOrderMgr(); }">
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="order-mgr-search" placeholder="日期/通路/編號" style="margin: 0; flex: 1;">
                     <button class="btn" onclick="searchOrderMgr()" style="width: 80px; margin: 0;">搜尋</button>
                 </div>
                 <div id="order-mgr-results" style="margin-top: 15px;"></div>
@@ -192,13 +174,13 @@
                 <div id="modal-bank-input" class="hidden" style="margin-top:10px; background: #fdfdfd; padding: 10px; border-radius: 10px; border: 1px dashed var(--accent);">
                     <div style="font-size: 12px; margin-bottom: 5px; color: var(--highlight);" id="bank-input-label"></div>
                     <div style="display: flex; gap: 5px;">
-                        <input type="text" placeholder="輸入後五碼" id="modal-code" style="padding:8px; margin:0; flex: 1; font-size:14px;" autocomplete="off" onkeydown="if(event.keyCode==13){ confirmModalBank(); }">
+                        <input type="text" placeholder="輸入後五碼" id="modal-code" style="padding:8px; margin:0; flex: 1; font-size:14px;">
                         <button class="btn-small active" onclick="confirmModalBank()" style="margin:0; padding: 0 15px;">確認</button>
                     </div>
                 </div>
                 <div style="margin-top: 15px;">
                     <label style="margin:0;">訂金</label>
-                    <input type="number" id="modal-deposit" class="deposit-input" placeholder="請輸入金額" onkeydown="if(event.keyCode==13){ finalSubmit(); }">
+                    <input type="number" id="modal-deposit" class="deposit-input" placeholder="請輸入金額">
                 </div>
             </div>
             <div style="margin-top: 20px; display: flex; gap: 10px;">
@@ -220,16 +202,12 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbzEaZqaGT4HU2sWDUIiBLQ2TljlaW4YCeupcd_yVf0AlboFATxXSKpkwUwfUWbTuovGKA/exec";
         let ipList = []; let selectedIP = "多團"; let selectedSheetType = "線上"; let currentParsedData = null;
         let currentSearchStatusFilter = "";
-        
         const payColorMap = { "中信": "#599D9C", "LPay": "#00B900", "現金": "#FDD55E", "無卡": "#ADC2D3", "LBank": "#1E77BD", "IPass": "#F09163", "貨付": "#F4B9B8" };
-        const paymentOptions = ['中信', 'LBank', 'LPay', 'IPass', '無卡', '現金', '貨付'];
         const statusColorMap = { "預購": "#DEBAD6", "現貨": "#FFE15E", "已出貨": "#88857D" };
 
         function initApp() {
             const lastPage = localStorage.getItem('last_active_page') || 'add';
             switchPage(lastPage, document.getElementById('nav-' + lastPage));
-            const cachedIPs = localStorage.getItem('cached_ip_list');
-            if (cachedIPs) { ipList = JSON.parse(cachedIPs); renderIPButtons(); }
             fetchIPs(); renderModalPaySelector();
         }
 
@@ -237,28 +215,16 @@
             try {
                 const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "getIPs" }) });
                 const data = await response.json();
-                if (Array.isArray(data)) { ipList = data; localStorage.setItem('cached_ip_list', JSON.stringify(data)); renderIPButtons(); }
-            } catch (e) { console.error(e); }
+                ipList = data; renderIPButtons();
+            } catch (e) {}
         }
 
         function renderIPButtons() {
             const container = document.getElementById('ip-buttons');
-            const priorityOrder = ["吉伊卡哇", "白熊", "三麗鷗", "寶可夢"];
-            let allNames = ipList.map(ip => (typeof ip === 'object' ? ip.name : ip));
-            let others = allNames.filter(name => !priorityOrder.includes(name));
-            let finalOrder = priorityOrder.filter(name => allNames.includes(name)).concat(others);
-            container.innerHTML = `<button class="btn-small ${selectedIP === '多團' ? 'active' : ''}" onclick="setIP('多團')">自動辨識</button>` + 
-                finalOrder.map(name => `<button class="btn-small ${name === selectedIP ? 'active' : ''}" onclick="setIP('${name}')">${name}</button>`).join('');
+            container.innerHTML = `<button class="btn-small active" onclick="selectedIP='多團'">自動辨識</button>` + 
+                ipList.map(name => `<button class="btn-small" onclick="selectedIP='${name}'">${name}</button>`).join('');
         }
 
-        function renderModalPaySelector() {
-            const container = document.getElementById('modal-pay-selector');
-            container.innerHTML = paymentOptions.map(p => `<button class="pay-btn" id="modal-pay-${p}" style="background-color: ${payColorMap[p]}" onclick="selectModalPay('${p}')">${p}</button>`).join('');
-        }
-
-        function setIP(val) { selectedIP = val; renderIPButtons(); }
-        function setSheetType(val, el) { selectedSheetType = val; document.querySelectorAll('.type-item').forEach(i => i.classList.remove('active')); el.classList.add('active'); }
-        
         function switchPage(pageId, element) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById('page-' + pageId).classList.add('active');
@@ -267,249 +233,149 @@
             localStorage.setItem('last_active_page', pageId);
         }
 
-        function parseAndConfirm() {
-            const rawText = document.getElementById('quick-input').value.trim();
-            if (!rawText) return;
-            const lines = rawText.split('\n').map(l => l.trim()).filter(l => l !== "");
-            const customerName = lines[0];
-            const products = []; let currentGroup = "無"; let total = 0;
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i];
-                if (line.match(/【(.+)】/)) { currentGroup = line.match(/【(.+)】/)[1]; continue; }
-                if (line.includes('$')) {
-                    const p = line.match(/(.+)\$(\d+)/);
-                    if (p) { 
-                        const name = p[1].replace(/^\d+[\.\s\-、]*/, '').trim(); 
-                        const price = p[2];
-                        if (name.includes("總金額")) continue;
-                        products.push({ group: currentGroup, name: name, price: price }); total += parseInt(price); 
-                    }
-                }
-            }
-            let finalStatus = (selectedSheetType === '現貨' ? "現貨" : "預購");
-            currentParsedData = { customerName, products, total, type: (selectedSheetType === '現貨' ? '線上' : selectedSheetType), status: finalStatus, ip: selectedIP, deposit: "", payMethod: "" };
-            document.getElementById('modal-ip-display').innerText = `IP 分類：${selectedIP}`;
-            let detailHtml = `<div style="background:#f9f9f9; padding:10px; border-radius:10px; margin-bottom:10px; font-size:13px;"><b>顧客：</b>${customerName}<br><b>來源：</b>${selectedSheetType}</div><div class="items-container" style="border:none; margin:0; padding:0;">`;
-            products.forEach(item => {
-                detailHtml += `<div class="item-line" style="margin-bottom:12px; border-bottom:1px solid #f0f0f0; padding-bottom:8px;"><div style="flex:1;"><div style="font-weight:bold; color:var(--text);">${item.name}</div><div style="display:inline-block; font-size:10px; background:var(--accent); color:var(--highlight); padding:1px 6px; border-radius:4px; margin-top:2px;">${item.group}</div></div><div style="font-weight:bold; color:var(--highlight); font-size:15px;">$${item.price}</div></div>`;
-            });
-            detailHtml += `</div><div style="text-align:right; font-size:18px; font-weight:bold; margin-top:10px; color:var(--highlight);">總金額：$${total}</div>`;
-            document.getElementById('confirm-content').innerHTML = detailHtml;
-            document.getElementById('modal-deposit').value = "";
-            document.getElementById('modal-bank-input').classList.add('hidden');
-            document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('confirm-modal').classList.remove('hidden');
+        function setSheetType(val, el) { selectedSheetType = val; document.querySelectorAll('.type-item').forEach(i => i.classList.remove('active')); el.classList.add('active'); }
+        
+        function renderModalPaySelector() {
+            const container = document.getElementById('modal-pay-selector');
+            const options = ['中信', 'LBank', 'LPay', 'IPass', '無卡', '現金', '貨付'];
+            container.innerHTML = options.map(p => `<button class="pay-btn" id="modal-pay-${p}" style="background-color: ${payColorMap[p]}" onclick="selectModalPay('${p}')">${p}</button>`).join('');
         }
 
         function selectModalPay(method) {
             document.querySelectorAll('.pay-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`modal-pay-${method}`).classList.add('active');
             if (method === '中信' || method === 'LBank') {
-                const bankInput = document.getElementById('modal-bank-input');
-                bankInput.classList.remove('hidden');
-                document.getElementById('bank-input-label').innerText = `匯款後五碼：`;
-                bankInput.dataset.method = method;
-            } else { updateModalPayDisplay(method); document.getElementById('modal-bank-input').classList.add('hidden'); }
+                document.getElementById('modal-bank-input').classList.remove('hidden');
+                document.getElementById('bank-input-label').innerText = method + " 後五碼：";
+                document.getElementById('modal-bank-input').dataset.method = method;
+            } else {
+                currentParsedData.payMethod = method;
+                document.getElementById('modal-bank-input').classList.add('hidden');
+            }
         }
 
         function confirmModalBank() {
             const method = document.getElementById('modal-bank-input').dataset.method;
             const code = document.getElementById('modal-code').value;
             if (!code) return alert("請輸入後五碼");
-            updateModalPayDisplay(`${method}(${code})`);
+            currentParsedData.payMethod = `${method}(${code})`;
             document.getElementById('modal-bank-input').classList.add('hidden');
-            document.getElementById('modal-code').value = "";
         }
 
-        function updateModalPayDisplay(val) { currentParsedData.payMethod = val; }
-        function closeModal() { document.getElementById('confirm-modal').classList.add('hidden'); }
+        function parseAndConfirm() {
+            const rawText = document.getElementById('quick-input').value.trim();
+            if (!rawText) return;
+            const lines = rawText.split('\n');
+            const customerName = lines[0].trim();
+            const products = []; let currentGroup = "無"; let total = 0;
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim(); if (!line) continue;
+                if (line.match(/【(.+)】/)) { currentGroup = line.match(/【(.+)】/)[1]; continue; }
+                if (line.includes('$')) {
+                    const parts = line.match(/(.+)\$(\d+)/);
+                    if (parts) { products.push({ group: currentGroup, name: parts[1].trim(), price: parts[2] }); total += parseInt(parts[2]); }
+                }
+            }
+            currentParsedData = { customerName, products, total, type: selectedSheetType, status: (selectedSheetType === '現貨' ? '現貨' : '預購'), ip: selectedIP, payMethod: "" };
+            let detailHtml = `<div style="background:#f9f9f9; padding:10px; border-radius:10px; margin-bottom:10px;"><b>顧客：</b>${customerName}</div>`;
+            products.forEach(item => { detailHtml += `<div class="item-line"><div>${item.name} (${item.group})</div><div>$${item.price}</div></div>`; });
+            detailHtml += `<div style="text-align:right; font-weight:bold; margin-top:10px;">總計：$${total}</div>`;
+            document.getElementById('modal-ip-display').innerText = "IP 分類：" + selectedIP;
+            document.getElementById('confirm-content').innerHTML = detailHtml;
+            document.getElementById('confirm-modal').classList.remove('hidden');
+        }
 
         async function finalSubmit() {
+            if (!currentParsedData.payMethod) return alert("請選擇付款方式");
             const btn = document.getElementById('btn-final-submit');
-            if (!currentParsedData.payMethod) { alert("請選擇付款方式"); return; }
-            btn.disabled = true; btn.innerText = "傳送中...";
+            btn.disabled = true; btn.innerText = "寫入中...";
             currentParsedData.deposit = document.getElementById('modal-deposit').value || "0";
             try {
                 await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "addOrder", data: currentParsedData }) });
-                alert("登記成功！"); document.getElementById('quick-input').value = ""; closeModal();
-                fetchIPs();
-            } catch (e) { alert("提交失敗"); }
-            finally { btn.disabled = false; btn.innerText = "確認並寫入"; }
+                alert("登記成功！"); location.reload();
+            } catch (e) { alert("寫入失敗"); btn.disabled = false; btn.innerText = "確認並寫入"; }
         }
 
         async function searchOrders() {
-            const keyword = document.getElementById('quick-search-input').value.trim();
-            if (!keyword) return;
-            const list = document.getElementById('search-results-list');
-            list.innerHTML = `<div style="text-align:center; padding:20px; color:#C6AC8F;">搜尋中...</div>`;
-            document.getElementById('search-results').classList.remove('hidden');
-            try {
-                const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "queryOrder", keyword: keyword }) });
-                const data = await response.json();
-                renderSearchResults(data, list, keyword, currentSearchStatusFilter);
-            } catch (e) { list.innerHTML = "搜尋失敗"; }
-        }
-
-        function renderSearchResults(data, list, keyword, statusFilter) {
-            if (!data || data.length === 0) { list.innerHTML = "找不到資料"; return; }
-            let lastRealName = ""; let lastRealPay = ""; let lastRealDeposit = ""; let lastRealDate = ""; let lastRealPayDate = "";
-            const fixedData = data.map(item => {
-                if (item.lineName && item.lineName.trim() !== "") {
-                    lastRealName = item.lineName; lastRealPay = item.payMethod; lastRealDeposit = item.deposit; lastRealDate = item.orderDate; lastRealPayDate = item.payDate;
-                }
-                return { ...item, lineName: lastRealName, payMethod: lastRealPay, deposit: lastRealDeposit, orderDate: lastRealDate, payDate: lastRealPayDate };
-            });
-            const filteredData = fixedData.filter(item => {
-                const searchKey = keyword.toLowerCase();
-                const name = item.lineName.toLowerCase();
-                const group = item.groupName.toLowerCase();
-                const status = item.status || '預購';
-                const keywordMatch = (name === searchKey || group.includes(searchKey));
-                const statusMatch = (statusFilter === "" || status === statusFilter);
-                return keywordMatch && statusMatch;
-            });
-            if (filteredData.length === 0) { list.innerHTML = "找不到相關資料"; return; }
-            let html = `<div style="font-weight:bold; margin-bottom:10px; border-bottom:2px solid var(--accent); padding-bottom:5px;">${keyword} 的訂單 (${filteredData.length} 筆)</div>`;
-            const timeGroups = {};
-            filteredData.forEach(item => {
-                const key = `${item.lineName}_${item.orderDate}_${item.payMethod}`; 
-                if (!timeGroups[key]) { timeGroups[key] = { name: item.lineName, pay: item.payMethod || "", deposit: item.deposit, orderDate: item.orderDate, payDate: item.payDate || "未填", groups: {} }; }
-                if (!timeGroups[key].groups[item.groupName]) timeGroups[key].groups[item.groupName] = [];
-                timeGroups[key].groups[item.groupName].push(item);
-            });
-            for (let k in timeGroups) {
-                const tg = timeGroups[k];
-                const tagColor = payColorMap[tg.pay.split('(')[0]] || "#ADC2D3";
-                let subTotal = 0;
-                for (let gName in tg.groups) tg.groups[gName].forEach(i => subTotal += (parseInt(i.price) || 0));
-                const isSearchingName = (tg.name.toLowerCase() === keyword.toLowerCase());
-                html += `<div class="result-group"><div class="user-header"><div style="display:flex; align-items:center;"><span class="result-tag" style="background:${tagColor}">${tg.pay || '未填'}</span><span style="font-size:11px; font-weight:bold; margin:0 8px;">${tg.orderDate} <span style="color:#989FC0; font-weight:normal;">| ${tg.payDate}</span></span>${isSearchingName ? '' : `<span class="link-text" onclick="quickTrigger('${tg.name}')" style="font-weight:bold;">${tg.name}</span>`}</div><div style="font-weight:bold;">$${subTotal} <span style="font-size:11px; color:#FB9E09;">（訂金：${tg.deposit||0}）</span></div></div><div class="items-container">`;
-                for (let gName in tg.groups) {
-                    if (gName !== "無" && gName !== keyword) html += `<span class="group-title" onclick="quickTrigger('${gName}')">${gName}</span>`;
-                    html += tg.groups[gName].map(i => {
-                        const currentStatus = i.status || '預購';
-                        const statusColor = statusColorMap[currentStatus] || "#CCCCCC";
-                        const uniqueId = `status-${i.sheetName}-${i.rowIndex}`;
-                        return `<div class="item-line" style="margin:6px 0; align-items: flex-start;"><div class="status-container" id="container-${uniqueId}"><span class="status-tag" id="tag-${uniqueId}" style="background:${statusColor}" onclick="showStatusMenu('${uniqueId}')">${currentStatus}</span><div class="status-options hidden" id="menu-${uniqueId}">${["預購", "現貨", "已出貨"].map(s => `<span class="status-tag" style="background:${statusColorMap[s]}; font-size:10px; padding:2px 6px;" onclick="updateStatusDirect('${i.sheetName}', ${i.rowIndex}, '${s}', '${uniqueId}')">${s}</span>`).join('')}</div></div><div style="flex:1; padding-top:2px;">${i.name}</div><span style="font-weight:bold; padding-top:2px;">$${i.price}</span></div>`;
-                    }).join('');
-                }
-                html += `</div></div>`;
-            }
-            list.innerHTML = html;
-        }
-
-        function setStatusFilter(val, el) { currentSearchStatusFilter = val; document.querySelectorAll('#search-status-btns .filter-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); if (document.getElementById('quick-search-input').value.trim()) searchOrders(); }
-        function showStatusMenu(id) { document.getElementById(`menu-${id}`).classList.toggle('hidden'); }
-        async function updateStatusDirect(sheetName, rowIndex, nextStatus, id) {
-            const tag = document.getElementById(`tag-${id}`); const menu = document.getElementById(`menu-${id}`); const oldStatus = tag.innerText;
-            tag.innerText = "更新中..."; tag.style.opacity = "0.5"; menu.classList.add('hidden');
-            try {
-                const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "updateStatus", sheetName, rowIndex, status: nextStatus }) });
-                const result = await response.json();
-                if (result.success) { tag.innerText = nextStatus; tag.style.backgroundColor = statusColorMap[nextStatus]; } 
-                else { alert("更新失敗：" + result.message); tag.innerText = oldStatus; tag.style.backgroundColor = statusColorMap[oldStatus]; }
-            } catch (e) { alert("網路錯誤"); tag.innerText = oldStatus; tag.style.backgroundColor = statusColorMap[oldStatus]; } 
-            finally { tag.style.opacity = "1"; }
-        }
-
-        function quickTrigger(val) { document.getElementById('quick-search-input').value = val; searchOrders(); }
-
-        // --- 訂購管理相關函數 ---
-
-        async function submitOrderMgr() {
-            const rawText = document.getElementById('order-mgr-input').value.trim();
-            if (!rawText) return;
-            const lines = rawText.split('\n').map(l => l.trim()).filter(l => l !== "");
-            if (lines.length < 4) return alert("格式不正確");
-
-            const line1 = lines[0];
-            const date = line1.substring(0, 4);
-            const channel = line1.substring(4).trim();
-            const orderNo = lines[1];
-            const jpyPrice = lines[2];
-            const contentLine = lines[3];
-            let diaowa = "", wa = "", key = "", others = [];
-            const items = contentLine.split(/[、，, ]+/);
-            items.forEach(item => {
-                const numMatch = item.match(/\d+/);
-                const num = numMatch ? numMatch[0] : "1";
-                if (item.includes("吊娃")) { diaowa = num; } 
-                else if (item.includes("鑰匙圈")) { key = num; } 
-                else if (item.includes("娃") && !item.includes("吊娃")) { wa = num; } 
-                else if (item.trim() !== "") { others.push(item); }
-            });
-            const note = lines[4] || "";
-
-            const payload = {
-                action: "addOrderRecord",
-                data: { date, channel, orderNo, jpyPrice, diaowa, wa, key, others: others.join('、'), note }
-            };
-
-            try {
-                const btn = event.target;
-                btn.disabled = true; btn.innerText = "傳送中...";
-                await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
-                alert("登記成功！"); document.getElementById('order-mgr-input').value = "";
-            } catch (e) { alert("登記失敗"); } finally {
-                const btn = document.querySelector("#page-record .btn");
-                btn.disabled = false; btn.innerText = "確認登記";
-            }
-        }
-
-        async function searchOrderMgr() {
-            const kw = document.getElementById('order-mgr-search').value.trim();
+            const kw = document.getElementById('quick-search-input').value.trim();
             if (!kw) return;
-            const resDiv = document.getElementById('order-mgr-results');
-            resDiv.innerHTML = `<div style="text-align:center; padding:20px; color:#C6AC8F;">查詢中...</div>`;
+            document.getElementById('search-results').classList.remove('hidden');
+            const resDiv = document.getElementById('search-results-list');
+            resDiv.innerHTML = "搜尋中...";
             try {
-                const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "queryOrderRecord", keyword: kw }) });
+                const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "queryOrder", keyword: kw }) });
                 const data = await response.json();
-                renderOrderMgrList(data);
+                resDiv.innerHTML = data.map(i => `<div class="result-group">${i.name} - ${i.price} [${i.status}]</div>`).join('');
             } catch (e) { resDiv.innerHTML = "查詢失敗"; }
         }
 
-        function renderOrderMgrList(data) {
-            const resDiv = document.getElementById('order-mgr-results');
-            if (!data || data.length === 0) { resDiv.innerHTML = "找不到資料"; return; }
-            let html = "";
-            data.forEach((item, index) => {
-                const uniqueId = `mgr-${index}`;
-                html += `
-                <div class="mgr-item-card">
-                    <div class="mgr-row">
-                        <div class="mgr-col-left">
-                            <div style="font-weight:bold;">${item.date} ${item.channel}</div>
-                            <div style="color:#999; font-size:11px;">單號：${item.orderNo}</div>
-                        </div>
-                        <div class="mgr-col-right">
-                            <div style="font-weight:bold; color:var(--highlight);">$${item.jpyPrice} (JPY)</div>
-                        </div>
-                    </div>
-                    <div style="margin:5px 0;">${item.others || ''}</div>
-                    <div class="mgr-inline-input">
-                        <input type="text" id="ship-input-${uniqueId}" placeholder="配送單號" value="${item.shippingNo || ''}">
-                        <button class="btn-small active" onclick="updateShippingNo('訂購管理', ${item.rowIndex}, '${uniqueId}')">修改</button>
-                    </div>
-                </div>`;
-            });
-            resDiv.innerHTML = html;
+        async function submitOrderMgr() {
+            const raw = document.getElementById('order-mgr-input').value.trim();
+            if (!raw) return;
+            const lines = raw.split('\n');
+            const data = { date: lines[0], orderNo: lines[1], jpyPrice: lines[2], content: lines[3] };
+            try {
+                await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "addOrderRecord", data }) });
+                alert("登記成功！"); document.getElementById('order-mgr-input').value = "";
+            } catch (e) { alert("失敗"); }
         }
 
-        async function updateShippingNo(sheetName, rowIndex, id) {
-            const val = document.getElementById(`ship-input-${id}`).value;
-            const btn = document.querySelector(`#ship-input-${id} + button`);
-            const oldText = btn.innerText;
-            btn.disabled = true; btn.innerText = "...";
+        /* 修改後的查詢顯示邏輯：完全符合三行對齊格式與貨況判別 */
+        async function searchOrderMgr() {
+            const kw = document.getElementById('order-mgr-search').value.trim();
+            const resDiv = document.getElementById('order-mgr-results');
+            resDiv.innerHTML = "查詢中...";
             try {
-                const response = await fetch(API_URL, { 
-                    method: "POST", 
-                    body: JSON.stringify({ action: "updateShippingNo", sheetName, rowIndex, shippingNo: val }) 
-                });
-                const result = await response.json();
-                if (result.success) alert("配送單號更新成功");
-                else alert("更新失敗：" + result.message);
-            } catch (e) { alert("網路錯誤"); }
-            finally { btn.disabled = false; btn.innerText = oldText; }
+                const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "queryOrderRecord", keyword: kw }) });
+                const data = await response.json();
+                
+                if (!data || data.length === 0) { resDiv.innerHTML = "無資料"; return; }
+
+                resDiv.innerHTML = data.map(i => {
+                    // 貨況判別：有 shipNo 顯示「到倉」，沒有則「未出貨」
+                    const isArrived = i.shipNo && i.shipNo.toString().trim() !== "";
+                    const tagText = isArrived ? "到倉" : "未出貨";
+                    const tagColor = isArrived ? "#1890ff" : "#faad14";
+
+                    // 內容組合
+                    let items = [];
+                    if (i.diaowa) items.push(`吊娃x${i.diaowa}`);
+                    if (i.wa) items.push(`娃x${i.wa}`);
+                    if (i.key) items.push(`鑰匙圈x${i.key}`);
+                    if (i.others) items.push(i.others);
+                    const contentStr = items.join('、') || "無內容";
+
+                    return `
+                    <div class="mgr-item-card">
+                        <div class="mgr-row">
+                            <div class="mgr-left">
+                                <span class="mgr-tag" style="background:${tagColor}">${tagText}</span>
+                                <span class="text-sec">${i.date || ''} ${i.channel || ''}</span>
+                            </div>
+                            <div class="mgr-right">¥${i.jpyPrice || 0}</div>
+                        </div>
+                        <div class="mgr-row">
+                            <div class="mgr-left text-sec" style="font-size:11px;">
+                                ${i.orderNo || ''} | <span class="${isArrived ? 'text-blue' : ''}">${i.shipNo || '尚未發貨'}</span>
+                            </div>
+                            <div class="mgr-right text-red">$${i.twdPrice || 0}</div>
+                        </div>
+                        <div class="mgr-row">
+                            <div class="mgr-left" style="color:#555; font-size:12px;">${contentStr}</div>
+                            <div class="mgr-right text-sec" style="font-weight:normal; font-size:11px;">
+                                ${i.weight ? i.weight + ' kg' : '- kg'}
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            } catch (e) { resDiv.innerHTML = "查詢失敗"; }
+        }
+
+        function closeModal() { document.getElementById('confirm-modal').classList.add('hidden'); }
+        function setStatusFilter(val, el) { 
+            currentSearchStatusFilter = val; 
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
         }
     </script>
 </body>
