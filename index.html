@@ -106,8 +106,10 @@
         .group-title { font-weight: bold; font-size: 13px; color: var(--highlight); margin: 8px 0 4px 0; display: block; text-decoration: underline; cursor: pointer; }
 
         /* 訂購管理專用樣式 */
-        .mgr-item-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
-        .mgr-tag { padding: 2px 8px; border-radius: 6px; font-size: 11px; color: white; font-weight: bold; cursor: pointer; }
+        .mgr-item-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 12px; margin-bottom: 10px; font-size: 13px; line-height: 1.6; }
+        .mgr-tag { padding: 3px 8px; border-radius: 6px; font-size: 11px; color: white; font-weight: bold; cursor: pointer; margin-right: 8px; }
+        .mgr-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .mgr-sub { color: #888; font-size: 12px; }
     </style>
 </head>
 <body onload="initApp()">
@@ -475,73 +477,61 @@
             resDiv.innerHTML = data.map(i => {
                 const hasShipNo = i.shipNo && i.shipNo.trim() !== "";
                 const tagText = hasShipNo ? "到倉" : "未出";
-                const tagColor = hasShipNo ? "#FFE15E" : "#7E88A0"; // 修改為：未出藍灰，到倉黃
+                const tagColor = hasShipNo ? "#FFE15E" : "#7E88A0";
                 
                 let stats = [];
                 if(i.diaowa) stats.push(`吊娃x${i.diaowa}`);
                 if(i.wa) stats.push(`娃x${i.wa}`);
                 if(i.key) stats.push(`鑰匙圈x${i.key}`);
                 if(i.others) stats.push(i.others);
-
-                const uniqueId = `mgr-${i.rowIndex}`;
+                const contentStr = stats.join('、');
 
                 return `
                 <div class="mgr-item-card">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                        <div style="flex:1;">
-                            <div style="font-size:11px; color:#999; margin-bottom:4px;">${i.date} | ${i.channel}</div>
-                            <div style="font-weight:bold; color:var(--title-color); margin-bottom:4px;">${i.orderNo}</div>
-                            <div style="font-size:13px; color:#555;">${stats.join('、')}</div>
+                    <div class="mgr-row">
+                        <div>
+                            <span class="mgr-tag" style="background:${tagColor}" onclick="updateShipNoPrompt(${i.rowIndex}, '${i.shipNo||''}', '${i.weight||''}')">${tagText}</span>
+                            <span style="font-weight:bold;">${i.date}</span>
+                            <span style="margin-left:8px; color:#666;">${i.channel}</span>
                         </div>
-                        <div style="text-align:right;">
-                            <div id="tag-container-${uniqueId}">
-                                <span class="mgr-tag" id="tag-mgr-${uniqueId}" style="background:${tagColor}" onclick="showShipInput('${uniqueId}')">${tagText}</span>
-                            </div>
-                            <div style="font-weight:bold; color:var(--highlight); margin-top:8px;">¥${i.jpyPrice}</div>
-                        </div>
+                        <div style="font-weight:bold; color:var(--highlight);">${i.jpyPrice} JPY</div>
                     </div>
-                    <div id="ship-input-div-${uniqueId}" class="hidden" style="margin-top:10px; border-top:1px dashed #eee; padding-top:10px;">
-                        <div style="display:flex; gap:5px;">
-                            <input type="text" id="input-ship-${uniqueId}" placeholder="輸入配送單號" style="margin:0; padding:8px; font-size:13px; flex:1;">
-                            <button class="btn-small active" onclick="updateShipNo('${i.rowIndex}', '${uniqueId}')" style="margin:0;">送出</button>
-                        </div>
+                    <div class="mgr-row mgr-sub">
+                        <div style="flex:1;">${i.orderNo} | <span style="color:#B08968;">${i.shipNo || '尚未發貨'}</span></div>
+                        <div style="font-weight:bold;">${i.twpPrice || ' - '} TWD</div>
                     </div>
-                    ${i.note ? `<div style="font-size:11px; color:#B08968; background:#FFF9F0; padding:4px 8px; border-radius:4px; margin-top:8px;">註：${i.note}</div>` : ''}
-                    ${i.shipNo ? `<div style="font-size:11px; color:#7E88A0; margin-top:4px;">單號：${i.shipNo}</div>` : ''}
+                    <div class="mgr-row" style="margin-top:5px; border-top:1px dashed #eee; padding-top:5px; align-items:flex-start;">
+                        <div style="flex:1; color:#555;">${contentStr}</div>
+                        <div style="font-weight:bold; color:#74512D; margin-left:10px;">${i.weight ? i.weight+'g' : '- g'}</div>
+                    </div>
                 </div>`;
             }).join('');
         }
 
-        function showShipInput(id) {
-            document.getElementById(`ship-input-div-${id}`).classList.toggle('hidden');
-        }
+        async function updateShipNoPrompt(rowIndex, oldShipNo, oldWeight) {
+            const newShipNo = prompt("請輸入配送單號：", oldShipNo);
+            if (newShipNo === null) return;
+            const newWeight = prompt("請輸入重量 (g)：", oldWeight);
+            if (newWeight === null) return;
 
-        async function updateShipNo(rowIndex, id) {
-            const shipNo = document.getElementById(`input-ship-${id}`).value.trim();
-            if (!shipNo) return alert("請輸入單號");
-            
-            const tag = document.getElementById(`tag-mgr-${id}`);
-            const oldText = tag.innerText;
-            tag.innerText = "更新中...";
-            
             try {
-                const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "updateOrderRecordShipNo", rowIndex, shipNo }) });
-                const result = await response.json();
-                if (result.success) {
-                    // 修改完成後直接更改標籤狀態與顏色，不重新搜尋
-                    tag.innerText = "到倉";
-                    tag.style.backgroundColor = "#FFE15E";
-                    document.getElementById(`ship-input-div-${id}`).classList.add('hidden');
-                    // 為了呈現美觀，可以在下方補一個單號顯示（可選）
+                const response = await fetch(API_URL, { 
+                    method: "POST", 
+                    body: JSON.stringify({ 
+                        action: "updateOrderRecordShip", 
+                        rowIndex: rowIndex, 
+                        shipNo: newShipNo,
+                        weight: newWeight
+                    }) 
+                });
+                const res = await response.json();
+                if(res.success) {
                     alert("更新成功");
+                    searchOrderMgr();
                 } else {
-                    alert("更新失敗");
-                    tag.innerText = oldText;
+                    alert("更新失敗：" + res.message);
                 }
-            } catch (e) {
-                alert("網路錯誤");
-                tag.innerText = oldText;
-            }
+            } catch(e) { alert("網路錯誤"); }
         }
     </script>
 </body>
