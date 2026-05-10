@@ -155,12 +155,12 @@
             <div class="card">
                 <div style="font-weight:bold; color:var(--highlight); margin-bottom:10px;">下單登記</div>
                 <label>快速輸入(時間、編號、內容)</label>
-                <textarea id="order-mgr-input" rows="6" placeholder=" " onkeydown="handleOrderMgrKey(event)"></textarea>
+                <textarea id="order-mgr-input" rows="6" placeholder=" "></textarea>
                 <button class="btn" onclick="submitOrderMgr()">確認登記</button>
             </div>
             <div class="card">
                 <div style="font-weight:bold; color:var(--highlight); margin-bottom:10px;">🔍 訂購查詢</div>
-                <input type="text" id="order-mgr-search" placeholder="日期/通路/編號" onkeydown="if(event.keyCode==13){ searchOrderMgr(); }">
+                <input type="text" id="order-mgr-search" placeholder="日期/通路/編號">
                 <div id="order-mgr-results"></div>
             </div>
         </div>
@@ -209,10 +209,8 @@
         let ipList = []; let selectedIP = "多團"; let selectedSheetType = "線上"; let currentParsedData = null;
         let currentSearchStatusFilter = "";
         
-        // 更新付款方式顏色
         const payColorMap = { "中信": "#599D9C", "LPay": "#00B900", "現金": "#FDD55E", "無卡": "#ADC2D3", "LBank": "#1E77BD", "IPass": "#F09163", "貨付": "#F4B9B8" };
         const paymentOptions = ['中信', 'LBank', 'LPay', 'IPass', '無卡', '現金', '貨付'];
-        
         const statusColorMap = { "預購": "#DEBAD6", "現貨": "#FFE15E", "已出貨": "#88857D" };
 
         function initApp() {
@@ -390,14 +388,6 @@
             finally { tag.style.opacity = "1"; }
         }
         function quickTrigger(val) { document.getElementById('quick-search-input').value = val; searchOrders(); }
-
-        function isMobileDevice() { return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
-        function handleOrderMgrKey(e) {
-            if (e.keyCode === 13 && !isMobileDevice()) {
-                e.preventDefault();
-                submitOrderMgr();
-            }
-        }
 
         async function submitOrderMgr() {
             const rawText = document.getElementById('order-mgr-input').value.trim();
