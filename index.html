@@ -105,8 +105,9 @@
 
         .group-title { font-weight: bold; font-size: 13px; color: var(--highlight); margin: 8px 0 4px 0; display: block; text-decoration: underline; cursor: pointer; }
 
-        /* 訂購管理專用樣式 - 嚴格保留 */
+        /* 訂購管理專用樣式 */
         .mgr-item-card { background: #fff; border-bottom: 1px solid #eee; padding: 15px 5px; font-size: 13px; line-height: 1.4; }
+        .mgr-tag { padding: 3px 8px; border-radius: 6px; font-size: 11px; color: white; font-weight: bold; cursor: pointer; }
         .mgr-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
         .mgr-col-left { display: flex; flex-direction: column; gap: 3px; flex: 1; }
         .mgr-col-right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; min-width: 80px; }
@@ -420,6 +421,7 @@
             if (!rawText) return;
             const lines = rawText.split('\n').map(l => l.trim()).filter(l => l !== "");
             if (lines.length < 4) return alert("格式不正確");
+
             const line1 = lines[0];
             const date = line1.substring(0, 4);
             const channel = line1.substring(4).trim();
@@ -437,9 +439,14 @@
                 else if (item.trim() !== "") { others.push(item); }
             });
             const note = lines[4] || "";
-            const payload = { action: "addOrderRecord", data: { date, channel, orderNo, jpyPrice, diaowa, wa, key, others: others.join('、'), note } };
+
+            const payload = {
+                action: "addOrderRecord",
+                data: { date, channel, orderNo, jpyPrice, diaowa, wa, key, others: others.join('、'), note }
+            };
+
             try {
-                const btn = document.querySelector("#page-record .btn");
+                const btn = event.target;
                 btn.disabled = true; btn.innerText = "傳送中...";
                 await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
                 alert("登記成功！"); document.getElementById('order-mgr-input').value = "";
@@ -471,46 +478,38 @@
                 <div class="mgr-item-card">
                     <div class="mgr-row">
                         <div class="mgr-col-left">
-                            <div style="font-weight:bold; font-size:14px;">${item.date} ${item.channel}</div>
+                            <div style="font-weight:bold;">${item.date} ${item.channel}</div>
                             <div style="color:#999; font-size:11px;">單號：${item.orderNo}</div>
                         </div>
                         <div class="mgr-col-right">
                             <div style="font-weight:bold; color:var(--highlight);">$${item.jpyPrice} (JPY)</div>
                         </div>
                     </div>
-                    <div style="margin:8px 0; color:var(--text); font-size:13px;">
-                        ${item.diaowa ? `吊娃*${item.diaowa} ` : ''}
-                        ${item.wa ? `娃*${item.wa} ` : ''}
-                        ${item.key ? `鑰匙圈*${item.key} ` : ''}
-                        ${item.others ? item.others : ''}
-                    </div>
+                    <div style="margin:5px 0;">${item.others || ''}</div>
                     <div class="mgr-inline-input">
-                        <input type="text" id="ship-input-${uniqueId}" placeholder="輸入配送單號" value="${item.shippingNo || ''}">
+                        <input type="text" id="ship-input-${uniqueId}" placeholder="配送單號" value="${item.shippingNo || ''}">
                         <button class="btn-small active" onclick="updateShippingNo('訂購管理', ${item.rowIndex}, '${uniqueId}')">修改</button>
                     </div>
-                    ${item.note ? `<div style="font-size:11px; background:#f0f0f0; padding:4px 8px; border-radius:4px;">備註：${item.note}</div>` : ''}
                 </div>`;
             });
             resDiv.innerHTML = html;
         }
 
         async function updateShippingNo(sheetName, rowIndex, id) {
-            const inputField = document.getElementById(`ship-input-${id}`);
-            const newNo = inputField.value.trim();
-            const btn = event.target;
-            if (!newNo) { alert("請輸入單號"); return; }
-            btn.disabled = true; btn.innerText = "傳送...";
+            const val = document.getElementById(`ship-input-${id}`).value;
+            const btn = document.querySelector(`#ship-input-${id} + button`);
+            const oldText = btn.innerText;
+            btn.disabled = true; btn.innerText = "...";
             try {
                 const response = await fetch(API_URL, { 
                     method: "POST", 
-                    body: JSON.stringify({ action: "updateShippingNo", sheetName: sheetName, rowIndex: rowIndex, shippingNo: newNo }) 
+                    body: JSON.stringify({ action: "updateShippingNo", sheetName, rowIndex, shippingNo: val }) 
                 });
                 const result = await response.json();
-                if (result.success) { alert("單號已更新！"); inputField.style.backgroundColor = "#e8f5e9"; } 
-                else { alert("更新失敗：" + result.message); }
-            } catch (e) { alert("網路錯誤"); } finally {
-                btn.disabled = false; btn.innerText = "修改";
-            }
+                if (result.success) alert("配送單號更新成功");
+                else alert("更新失敗：" + result.message);
+            } catch (e) { alert("網路錯誤"); }
+            finally { btn.disabled = false; btn.innerText = oldText; }
         }
     </script>
 </body>
