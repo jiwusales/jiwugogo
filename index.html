@@ -393,20 +393,24 @@
             const rawText = document.getElementById('order-mgr-input').value.trim();
             if (!rawText) return;
             
-            // 拆分每一行
             const lines = rawText.split('\n').map(l => l.trim()).filter(l => l !== "");
-            if (lines.length < 4) return alert("請輸入完整資訊（日期、編號、IP、內容、備註）");
+            if (lines.length < 3) return alert("請輸入完整資訊（日期通路、編號日幣、內容）");
 
-            const date = lines[0];      // 0510 -> A欄
-            const orderNo = lines[1];   // 1864537843 -> C欄
-            const ipName = lines[2];    // 寶可夢 -> B欄
-            const contentLine = lines[3]; // 吊娃5、娃3... -> 拆分到 I, J, K, L
-            const note = lines[4] || "";  // 受注5月 -> M欄
+            // --- 第一行：日期(A) + 通路(B) ---
+            // 匹配 前 4 位數字為日期，後面剩餘為通路
+            const line1 = lines[0];
+            const date = line1.substring(0, 4); // 0510
+            const channel = line1.substring(4).trim(); // 吉伊卡哇
 
-            // 初始化數量（設為空字串，若沒匹配到則不填0）
+            // --- 第二行：編號(C) + 日幣(E) ---
+            const line2 = lines[1].split(/\s+/);
+            const orderNo = line2[0] || ""; // 198463154632
+            const jpyPrice = line2[1] || ""; // 11200
+
+            // --- 第三行：內容拆分 ---
+            const contentLine = lines[2];
             let diaowa = "", wa = "", key = "", others = [];
             
-            // 處理內容行
             const items = contentLine.split(/[、，, ]+/);
             items.forEach(item => {
                 const numMatch = item.match(/\d+/);
@@ -417,23 +421,22 @@
                 } else if (item.includes("鑰匙圈")) {
                     key = num;
                 } else if (item.includes("娃") && !item.includes("吊娃")) {
-                    // 這裡用了排除法，確保「吊娃」不會被誤判為「娃」
                     wa = num;
                 } else if (item.trim() !== "") {
                     others.push(item);
                 }
             });
 
-            // 判斷通路 (保留你原本的邏輯)
-            const channel = (orderNo.startsWith('48') || orderNo.startsWith('m')) ? 'Mercari' : '通路A';
+            // --- 備註(M) ---
+            const note = lines[3] || "";
 
             const payload = {
                 action: "addOrderRecord",
                 data: {
                     date: date,           // A
-                    ipName: ipName,       // B
+                    channel: channel,     // B
                     orderNo: orderNo,     // C
-                    channel: channel,
+                    jpyPrice: jpyPrice,   // E
                     diaowa: diaowa,       // I
                     wa: wa,               // J
                     key: key,             // K
@@ -446,9 +449,7 @@
                 const btn = event.target;
                 btn.disabled = true;
                 btn.innerText = "傳送中...";
-                
                 await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
-                
                 alert("登記成功！");
                 document.getElementById('order-mgr-input').value = "";
             } catch (e) { 
