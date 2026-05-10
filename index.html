@@ -106,12 +106,14 @@
         .group-title { font-weight: bold; font-size: 13px; color: var(--highlight); margin: 8px 0 4px 0; display: block; text-decoration: underline; cursor: pointer; }
 
         /* 訂購管理專用樣式 */
-        .mgr-item-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 12px; margin-bottom: 10px; font-size: 13px; line-height: 1.6; position: relative; }
-        .mgr-tag { padding: 3px 8px; border-radius: 6px; font-size: 11px; color: white; font-weight: bold; cursor: pointer; margin-right: 8px; }
-        .mgr-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-        .mgr-sub { color: #888; font-size: 12px; }
-        .mgr-inline-input { margin: 5px 0; display: flex; gap: 5px; }
-        .mgr-inline-input input { padding: 8px; font-size: 14px; margin: 0; }
+        .mgr-item-card { background: #fff; border-bottom: 1px solid #eee; padding: 15px 5px; font-size: 13px; line-height: 1.4; }
+        .mgr-tag { padding: 3px 8px; border-radius: 6px; font-size: 11px; color: white; font-weight: bold; cursor: pointer; }
+        .mgr-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+        .mgr-col-left { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+        .mgr-col-right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; min-width: 80px; }
+        .mgr-inline-input { margin: 8px 0; display: flex; gap: 5px; background: #f9f9f9; padding: 8px; border-radius: 8px; }
+        .mgr-inline-input input { padding: 8px; font-size: 14px; margin: 0; flex: 1; height: 35px; }
+        .mgr-inline-input .btn-small { height: 35px; margin: 0; }
     </style>
 </head>
 <body onload="initApp()">
@@ -478,91 +480,107 @@
             
             let html = "";
             data.forEach((item, idx) => {
+                // 清理非數字字元
                 const jpyVal = (item.jpy || "").replace(/[^0-9.]/g, "");
                 const twdVal = (item.twd || "").replace(/[^0-9.]/g, "");
                 const deliveryNo = item.deliveryNo || "";
-                const weight = item.weight || "";
+                const weightVal = (item.weight || "").replace(/[^0-9.]/g, "");
+                const statusColor = deliveryNo ? "#88857D" : "#FFE15E";
 
                 html += `
                 <div class="mgr-item-card">
                     <div class="mgr-row">
-                        <span style="font-weight:bold; color:var(--highlight);">${item.date} ${item.channel}</span>
-                        <span class="mgr-sub">${item.orderNo}</span>
-                    </div>
-                    <div class="mgr-row">
-                        <div style="flex:1;">
-                            <span style="color:#9FABE0; font-weight:bold;">${jpyVal ? '¥' + jpyVal : renderMgrInlineInput(idx, 'jpy', '¥日幣')}</span>
-                            <span style="margin:0 8px; color:#eee;">|</span>
-                            <span style="color:#FB9E09; font-weight:bold;">${twdVal ? '$' + twdVal : renderMgrInlineInput(idx, 'twd', '$台幣')}</span>
+                        <div class="mgr-col-left">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span class="mgr-tag" style="background:${statusColor}" onclick="showMgrInput('${idx}', 'delivery')">${deliveryNo ? '已發貨' : '待發貨'}</span>
+                                <span style="font-weight:bold; color:var(--highlight);">${item.date} ${item.channel}</span>
+                            </div>
+                            <div class="mgr-sub" style="margin-top:3px;">${item.orderNo} ｜ <span onclick="showMgrInput('${idx}', 'delivery')" style="cursor:pointer; text-decoration:underline;">${deliveryNo || ''}</span></div>
+                        </div>
+                        <div class="mgr-col-right">
+                            <span style="color:#9FABE0; font-weight:bold; cursor:pointer;" onclick="showMgrInput('${idx}', 'jpy')">${jpyVal ? '¥' + jpyVal : '¥(填寫)'}</span>
+                            <span style="color:#FB9E09; font-weight:bold; cursor:pointer;" onclick="showMgrInput('${idx}', 'twd')">${twdVal ? '$' + twdVal : '$(填寫)'}</span>
                         </div>
                     </div>
-                    <div style="margin:8px 0; font-size:12px;">
-                        ${item.diaowa ? `<span class="mgr-tag" style="background:#DEBAD6">吊娃 ${item.diaowa}</span>` : ''}
-                        ${item.wa ? `<span class="mgr-tag" style="background:#FFE15E; color:#74512D">娃 ${item.wa}</span>` : ''}
-                        ${item.key ? `<span class="mgr-tag" style="background:#ADC2D3">鑰匙圈 ${item.key}</span>` : ''}
-                        <div style="margin-top:5px; color:#666;">${item.others || ''}</div>
+                    
+                    <div class="mgr-row" style="margin-top:10px;">
+                        <div class="mgr-col-left" style="color:#74512D;">
+                            <div>
+                                ${item.diaowa ? `吊娃:${item.diaowa} ` : ''}
+                                ${item.wa ? `娃:${item.wa} ` : ''}
+                                ${item.key ? `鑰匙圈:${item.key} ` : ''}
+                                ${item.others || ''}
+                            </div>
+                        </div>
+                        <div class="mgr-col-right">
+                            <span style="font-weight:bold; cursor:pointer;" onclick="showMgrInput('${idx}', 'weight')">${weightVal ? weightVal + 'kg' : '(填重量)'}</span>
+                        </div>
                     </div>
-                    <div class="mgr-row" style="border-top:1px dashed #eee; padding-top:8px; margin-top:8px;">
-                        <span class="mgr-tag" style="background:#B08968" onclick="showMgrInput('${idx}', 'weight')">重量: ${weight ? weight + 'kg' : '點擊輸入'}</span>
-                        <span class="mgr-tag" style="background:#74512D" onclick="showMgrInput('${idx}', 'delivery')">貨況: ${deliveryNo || '點擊輸入單號'}</span>
-                    </div>
+                    
                     <div id="mgr-input-area-${idx}" class="hidden"></div>
                 </div>`;
             });
             resDiv.innerHTML = html;
         }
 
-        function renderMgrInlineInput(idx, type, placeholder) {
-            return `<span style="text-decoration:underline; cursor:pointer;" onclick="showMgrInput('${idx}', '${type}')">${placeholder}</span>`;
-        }
-
         function showMgrInput(idx, type) {
+            // 先關閉所有其他的輸入框
+            document.querySelectorAll('[id^="mgr-input-area-"]').forEach(el => el.classList.add('hidden'));
+            
             const area = document.getElementById(`mgr-input-area-${idx}`);
             area.classList.remove('hidden');
+            
             let placeholder = "";
             let field = "";
-            if (type === 'jpy') { placeholder = "輸入日幣數字"; field = "E"; }
-            else if (type === 'twd') { placeholder = "輸入台幣數字"; field = "F"; }
-            else if (type === 'weight') { placeholder = "輸入重量(kg)"; field = "G"; }
+            if (type === 'jpy') { placeholder = "輸入日幣"; field = "E"; }
+            else if (type === 'twd') { placeholder = "輸入台幣"; field = "F"; }
+            else if (type === 'weight') { placeholder = "輸入重量(kg)"; field = "H"; }
             else if (type === 'delivery') { placeholder = "輸入配送單號"; field = "D"; }
 
             area.innerHTML = `
                 <div class="mgr-inline-input">
-                    <input type="text" id="mgr-input-val-${idx}" placeholder="${placeholder}">
-                    <button class="btn-small active" onclick="updateMgrField('${idx}', '${field}', '${type}')">回傳</button>
-                    <button class="btn-small" onclick="this.parentElement.parentElement.classList.add('hidden')">X</button>
+                    <input type="text" id="mgr-input-val-${idx}" placeholder="${placeholder}" autofocus>
+                    <button class="btn-small active" onclick="updateMgrField('${idx}', '${field}', '${type}')">確認</button>
+                    <button class="btn-small" onclick="this.parentElement.parentElement.classList.add('hidden')">取消</button>
                 </div>
             `;
+            
+            // 綁定 Enter 鍵直接確認
+            document.getElementById(`mgr-input-val-${idx}`).onkeydown = function(e) {
+                if(e.keyCode == 13) updateMgrField(idx, field, type);
+            };
         }
 
         async function updateMgrField(idx, column, type) {
             const val = document.getElementById(`mgr-input-val-${idx}`).value.trim();
-            if (!val) return;
+            const btn = event.target;
             
-            const resultsDiv = document.getElementById('order-mgr-results');
-            // 從畫面取得原始物件資料 (這裡假設 searchOrderMgr 拿到的資料存在全域或可重查)
-            // 為了達成「立刻顯示」，我們直接更新 DOM
+            btn.disabled = true;
+            btn.innerText = "...";
             
             try {
-                // 使用目前畫面上的關鍵字重新搜尋，或模擬更新
                 const response = await fetch(API_URL, { 
                     method: "POST", 
                     body: JSON.stringify({ 
                         action: "updateOrderRecordField", 
-                        rowIndex: idx, // 這裡需搭配後端對應 RowIndex
+                        rowIndex: idx, 
                         column: column, 
                         value: val 
                     }) 
                 });
                 const result = await response.json();
                 if (result.success) {
-                    // 成功後直接重新執行搜尋以更新畫面（模擬訂單查詢行為）
+                    // 關鍵：立刻重新搜尋，達成「立刻顯示」的效果
                     searchOrderMgr();
                 } else {
-                    alert("更新失敗");
+                    alert("更新失敗：" + result.message);
+                    btn.disabled = false;
+                    btn.innerText = "確認";
                 }
             } catch (e) {
-                alert("網路錯誤，請稍後再試");
+                alert("發生錯誤，請檢查網路");
+                btn.disabled = false;
+                btn.innerText = "確認";
             }
         }
 
